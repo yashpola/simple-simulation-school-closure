@@ -1,0 +1,39 @@
+Loading embedding model...
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 9703.15it/s]
+test_api_key_set (test_api_check.TestAPICheck.test_api_key_set) ... ok
+test_models_accessible (test_api_check.TestAPICheck.test_models_accessible) ... FAIL
+test_extract_tags_both (test_sanity.TestSanityCheck.test_extract_tags_both) ... ok
+test_extract_tags_missing_public (test_sanity.TestSanityCheck.test_extract_tags_missing_public) ... ok
+test_extract_tags_no_tags (test_sanity.TestSanityCheck.test_extract_tags_no_tags) ... ok
+
+======================================================================
+FAIL: test_models_accessible (test_api_check.TestAPICheck.test_models_accessible)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/yashpola/Repositories/simple-simulation-school-closure/tests/test_api_check.py", line 25, in test_models_accessible
+    response = self.client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 1318, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/openai/_base_client.py", line 1440, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/openai/_base_client.py", line 1213, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.BadRequestError: Error code: 400 - {'id': 'p4B498b-2kFHot-a466bc075e726be7', 'error': {'message': 'Unable to access non-serverless model meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo. Please visit https://api.together.ai/models/meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo to create and start a new dedicated endpoint for the model.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_available'}}
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/yashpola/Repositories/simple-simulation-school-closure/tests/test_api_check.py", line 32, in test_models_accessible
+    self.fail(f"API call failed for model {model}: {e}")
+AssertionError: API call failed for model meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo: Error code: 400 - {'id': 'p4B498b-2kFHot-a466bc075e726be7', 'error': {'message': 'Unable to access non-serverless model meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo. Please visit https://api.together.ai/models/meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo to create and start a new dedicated endpoint for the model.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_available'}}
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.878s
+
+FAILED (failures=1)
