@@ -90,12 +90,12 @@ def conduct_deliberation(
     run_config: RunConfig,
     config: ExperimentConfig,
     agent_temperature: float,
-) -> List[ChatEntry]:
+) -> Dict[str, List[ChatEntry]]:
     """
     Execute the multi-turn deliberation chat among personas based on the configuration and prompt settings.
     """
     print("\n[2/3] Starting deliberation...")
-    chat_history: List[ChatEntry] = []
+    chat_history: Dict[str, List[ChatEntry]] = {}
     topic_prompt = config.get("system_prompts", {}).get("topic_prompt", "")
     turn_prompt = config.get("user_prompts", {}).get("turn_prompt", "")
     max_turns = config.get("deliberation_config", {}).get("max_turns_per_agent", 1)
@@ -103,22 +103,25 @@ def conduct_deliberation(
 
     for round_num in range(max_turns):
         print(f"\n--- Round {round_num + 1} ---")
+        turn_key = f"turn_{round_num + 1}"
+        chat_history[turn_key] = []
         for p in personas:
             sys_prompt = f"{p.get('description', '')}\n\nTopic: {topic_prompt}\n{run_config.get('system_prompt_addition', '')}"
 
             messages: List[Dict[str, str]] = []
-            for entry in chat_history:
-                # We show the chat history as user messages to the model to represent what others said.
-                role = "assistant" if entry["agent"] == p["id"] else "user"
+            for past_turn in chat_history.values():
+                for entry in past_turn:
+                    # We show the chat history as user messages to the model to represent what others said.
+                    role = "assistant" if entry["agent"] == p["id"] else "user"
 
-                content = entry["public_response"]
-                if role == "user":
-                    content = f"[{entry['agent']}]: {entry['public_response']}"
-                elif role == "assistant" and entry.get("private_scratchpad"):
-                    # Remind the agent of its own past private thoughts for continuity
-                    content = f"<private_scratchpad>\n{entry['private_scratchpad']}\n</private_scratchpad>\n<public_response>\n{entry['public_response']}\n</public_response>"
+                    content = entry["public_response"]
+                    if role == "user":
+                        content = f"[{entry['agent']}]: {entry['public_response']}"
+                    elif role == "assistant" and entry.get("private_scratchpad"):
+                        # Remind the agent of its own past private thoughts for continuity
+                        content = f"<private_scratchpad>\n{entry['private_scratchpad']}\n</private_scratchpad>\n<public_response>\n{entry['public_response']}\n</public_response>"
 
-                messages.append({"role": role, "content": content})
+                    messages.append({"role": role, "content": content})
 
             messages.append(
                 {
@@ -137,7 +140,12 @@ def conduct_deliberation(
             if run_config.get("extract_tags", False):
                 scratchpad, public_response = extract_internal_monologue_and_public_response(raw_response)
 
-            chat_history.append(
+            # Strip any role prefix like [Heritage School Teacher]: or MOE Official:
+            role_pattern = r'^(?:\[.*?\]|(?:Heritage School Teacher|MOE Official|Teacher)):?\s*'
+            public_response = re.sub(role_pattern, '', public_response, flags=re.IGNORECASE)
+            raw_response = re.sub(role_pattern, '', raw_response, flags=re.IGNORECASE)
+
+            chat_history[turn_key].append(
                 {
                     "agent": p["id"],
                     "public_response": public_response,
@@ -153,7 +161,7 @@ def conduct_deliberation(
 def generate_final_stances(
     client: OpenAI,
     config: ExperimentConfig,
-    chat_history: List[ChatEntry],
+    chat_history: Dict[str, List[ChatEntry]],
     agent_temperature: float,
 ) -> Dict[str, str]:
     """
@@ -168,13 +176,14 @@ def generate_final_stances(
         sys_prompt = f"{p.get('description', '')}\n\nTopic: {topic_prompt}\n{post_stance_prompt}"
 
         messages = []
-        for entry in chat_history:
-            messages.append(
-                {
-                    "role": "user",
-                    "content": f"[{entry['agent']}]: {entry['public_response']}",
-                }
-            )
+        for past_turn in chat_history.values():
+            for entry in past_turn:
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": f"[{entry['agent']}]: {entry['public_response']}",
+                    }
+                )
         messages.append(
             {
                 "role": "user",

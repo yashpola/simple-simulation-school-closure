@@ -1,0 +1,30 @@
+{
+  "Control": {
+    "convergence": 0.8765807747840881,
+    "self_shift": 0.14767330884933472,
+    "covd_pre": 0.21566765010356903,
+    "covd_post": 0.23160600662231445,
+    "dqi": {
+      "level_of_justification": 3.0,
+      "content_of_justification": 3.0,
+      "respect": 3.0,
+      "constructive_politics": 3.0,
+      "interactivity": 2.8333333333333335,
+      "total": 14.833333333333334
+    }
+  },
+  "Treatment": {
+    "convergence": 0.8285509943962097,
+    "self_shift": 0.1401093602180481,
+    "covd_pre": 0.21566765010356903,
+    "covd_post": 0.31350308656692505,
+    "dqi": {
+      "level_of_justification": 3.0,
+      "content_of_justification": 3.0,
+      "respect": 3.0,
+      "constructive_politics": 3.0,
+      "interactivity": 2.6666666666666665,
+      "total": 14.666666666666666
+    }
+  }
+}

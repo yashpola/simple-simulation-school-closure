@@ -26,11 +26,14 @@ def main() -> None:
 
     # Load env vars for API key
     load_dotenv(dotenv_path=os.path.join(project_root, ".env"))
-    if not os.environ.get("OPENAI_API_KEY"):
-        print("Warning: OPENAI_API_KEY environment variable is not set.")
-        print("Please set OPENAI_API_KEY and OPENAI_BASE_URL in your .env file.\n")
+    if not os.environ.get("TOGETHER_API_KEY"):
+        print("Warning: TOGETHER_API_KEY environment variable is not set.")
+        print("Please set TOGETHER_API_KEY in your .env file.\n")
 
-    client = OpenAI()
+    client = OpenAI(
+        api_key=os.environ.get("TOGETHER_API_KEY"),
+        base_url="https://api.together.xyz/v1",
+    )
 
     # Load config
     config_path = args.config
@@ -66,22 +69,45 @@ def main() -> None:
     res_A: ExperimentResult = execute_simulation_run(client, config_A, config, shared_stances_pre)
     res_B: ExperimentResult = execute_simulation_run(client, config_B, config, shared_stances_pre)
 
-    # Ensure data directory exists for saving results
-    data_dir = os.path.dirname(config_path)
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
+    # Determine output directory
+    config_dir = os.path.dirname(config_path)
+    dir_name = os.path.basename(config_dir)
+    
+    if dir_name.startswith("exp") and dir_name[3:].isdigit() and len(dir_name) == 6:
+        # Config is already in a run-specific directory (e.g. data/exp000/)
+        output_dir = config_dir
+    else:
+        # Config is in a generic directory, create the next expXXX directory
+        base_data_dir = config_dir
+        existing_dirs = [
+            d for d in os.listdir(base_data_dir)
+            if os.path.isdir(os.path.join(base_data_dir, d)) and d.startswith("exp") and d[3:].isdigit() and len(d) == 6
+        ]
+        next_id = max([int(d[3:]) for d in existing_dirs]) + 1 if existing_dirs else 0
+        uid_str = f"exp{next_id:03d}"
+        output_dir = os.path.join(base_data_dir, uid_str)
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Copy config.json to the new run directory
+        import shutil
+        shutil.copy2(config_path, os.path.join(output_dir, "config.json"))
 
     # Save results to disk
-    with open(os.path.join(data_dir, "results_A.json"), "w") as f:
+    with open(os.path.join(output_dir, "results_control.json"), "w") as f:
         json.dump(res_A, f, indent=2)
-    with open(os.path.join(data_dir, "results_B.json"), "w") as f:
+    with open(os.path.join(output_dir, "results_treatment.json"), "w") as f:
         json.dump(res_B, f, indent=2)
 
     print(
-        f"\nResults saved to {os.path.join(data_dir, 'results_A.json')} and {os.path.join(data_dir, 'results_B.json')}"
+        f"\nResults saved to {os.path.join(output_dir, 'results_control.json')} and {os.path.join(output_dir, 'results_treatment.json')}"
     )
 
-    compare_and_evaluate_simulation_runs(client, config, res_A, res_B)
+    metrics = compare_and_evaluate_simulation_runs(client, config, res_A, res_B)
+    
+    with open(os.path.join(output_dir, "evals.json"), "w") as f:
+        json.dump(metrics, f, indent=2)
+        
+    print(f"Metrics saved to {os.path.join(output_dir, 'evals.json')}")
 
 
 if __name__ == "__main__":

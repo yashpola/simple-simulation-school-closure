@@ -8,13 +8,16 @@ class TestAPICheck(unittest.TestCase):
     def setUp(self):
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
         load_dotenv(dotenv_path=os.path.join(project_root, ".env"))
-        self.client = OpenAI()
+        self.client = OpenAI(
+            api_key=os.environ.get("TOGETHER_API_KEY"),
+            base_url="https://api.together.xyz/v1",
+        )
         
-        with open(os.path.join(project_root, "data/config.json"), "r") as f:
+        with open(os.path.join(project_root, "data/exp000/config.json"), "r") as f:
             self.config = json.load(f)
             
     def test_api_key_set(self):
-        self.assertIsNotNone(os.environ.get("OPENAI_API_KEY"), "OPENAI_API_KEY is not set in .env")
+        self.assertIsNotNone(os.environ.get("TOGETHER_API_KEY"), "TOGETHER_API_KEY is not set in .env")
         
     def test_models_accessible(self):
         # We test a simple generation for each model to ensure they are accessible

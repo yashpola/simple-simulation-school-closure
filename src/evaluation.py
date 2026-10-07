@@ -68,7 +68,7 @@ def calculate_covd(stances: Dict[str, str]) -> float:
 
 def evaluate_dqi_for_chat_history(
     client: OpenAI,
-    chat_history: List[ChatEntry],
+    chat_history: Dict[str, List[ChatEntry]],
     judge_model: str,
     judge_prompt: str,
     judge_temperature: float = 0.1,
@@ -92,53 +92,54 @@ def evaluate_dqi_for_chat_history(
     valid_turns = 0
     context_so_far = ""
 
-    for entry in chat_history:
-        current_turn = f"[{entry['agent']}]: {entry['public_response']}"
-        prompt_content = (
+    for past_turn in chat_history.values():
+        for entry in past_turn:
+            current_turn = f"[{entry['agent']}]: {entry['public_response']}"
+            prompt_content = (
             f"Context of previous turns:\n{context_so_far}\n\n"
             if context_so_far
             else "Context of previous turns: (None, this is the first turn)\n\n"
-        )
-        prompt_content += f"Evaluate THIS specific turn:\n{current_turn}\n\nProvide the JSON evaluation:"
-
-        try:
-            response = client.chat.completions.create(
-                model=judge_model,
-                messages=[
-                    {"role": "system", "content": judge_prompt},
-                    {"role": "user", "content": prompt_content},
-                ],
-                temperature=judge_temperature,
             )
+            prompt_content += f"Evaluate THIS specific turn:\n{current_turn}\n\nProvide the JSON evaluation:"
 
-            content = response.choices[0].message.content or ""
-            content = content.strip()
-            if content.startswith("```json"):
-                content = content[7:]
-            elif content.startswith("```"):
-                content = content[3:]
-            if content.endswith("```"):
-                content = content[:-3]
+            try:
+                response = client.chat.completions.create(
+                    model=judge_model,
+                    messages=[
+                        {"role": "system", "content": judge_prompt},
+                        {"role": "user", "content": prompt_content},
+                    ],
+                    temperature=judge_temperature,
+                )
 
-            result = json.loads(content.strip())
+                content = response.choices[0].message.content or ""
+                content = content.strip()
+                if content.startswith("```json"):
+                    content = content[7:]
+                elif content.startswith("```"):
+                    content = content[3:]
+                if content.endswith("```"):
+                    content = content[:-3]
 
-            turn_scores["level_of_justification"] += float(
-                result.get("level_of_justification", 0.0)
-            )
-            turn_scores["content_of_justification"] += float(
-                result.get("content_of_justification", 0.0)
-            )
-            turn_scores["respect"] += float(result.get("respect", 0.0))
-            turn_scores["constructive_politics"] += float(
-                result.get("constructive_politics", 0.0)
-            )
-            turn_scores["interactivity"] += float(result.get("interactivity", 0.0))
-            valid_turns += 1
+                result = json.loads(content.strip())
 
-        except Exception as e:
-            print(f"Error calculating DQI for turn with judge model: {e}")
+                turn_scores["level_of_justification"] += float(
+                    result.get("level_of_justification", 0.0)
+                )
+                turn_scores["content_of_justification"] += float(
+                    result.get("content_of_justification", 0.0)
+                )
+                turn_scores["respect"] += float(result.get("respect", 0.0))
+                turn_scores["constructive_politics"] += float(
+                    result.get("constructive_politics", 0.0)
+                )
+                turn_scores["interactivity"] += float(result.get("interactivity", 0.0))
+                valid_turns += 1
 
-        context_so_far += current_turn + "\n\n"
+            except Exception as e:
+                print(f"Error calculating DQI for turn with judge model: {e}")
+
+            context_so_far += current_turn + "\n\n"
 
     if valid_turns > 0:
         for k in turn_scores:
@@ -215,9 +216,10 @@ def compare_and_evaluate_simulation_runs(
     config: ExperimentConfig,
     results_A: ExperimentResult,
     results_B: ExperimentResult,
-) -> None:
+) -> dict:
     """
-    Evaluate, compare, and display the analysis between the control run (Run A) and the treatment run (Run B).
+    Evaluate, compare, and display the analysis between the control run (Control) and the treatment run (Treatment).
+    Returns a dictionary of all computed metrics.
     """
     print(f"\n{'='*40}")
     print("--- Analysis ---")
@@ -225,18 +227,18 @@ def compare_and_evaluate_simulation_runs(
 
     eval_metrics = config.get("deliberation_config", {}).get("eval_metrics", [])
 
-    # Metrics for Run A
+    # Metrics for Control
     conv_A, shift_A = calculate_cosine_metrics(results_A["stances_pre"], results_A["stances_post"])
     covd_pre_A = calculate_covd(results_A["stances_pre"])
     covd_post_A = calculate_covd(results_A["stances_post"])
 
-    # Metrics for Run B
+    # Metrics for Treatment
     conv_B, shift_B = calculate_cosine_metrics(results_B["stances_pre"], results_B["stances_post"])
     covd_pre_B = calculate_covd(results_B["stances_pre"])
     covd_post_B = calculate_covd(results_B["stances_post"])
 
-    print_run_metrics("Run A (Control)", conv_A, shift_A, covd_pre_A, covd_post_A, eval_metrics)
-    print_run_metrics("Run B (Treatment)", conv_B, shift_B, covd_pre_B, covd_post_B, eval_metrics)
+    print_run_metrics("Control", conv_A, shift_A, covd_pre_A, covd_post_A, eval_metrics)
+    print_run_metrics("Treatment", conv_B, shift_B, covd_pre_B, covd_post_B, eval_metrics)
 
     dqi_A: Optional[DQIScores] = None
     dqi_B: Optional[DQIScores] = None
@@ -251,8 +253,29 @@ def compare_and_evaluate_simulation_runs(
         dqi_B = evaluate_dqi_for_chat_history(client, results_B["chat_history"], judge_model, judge_prompt, judge_temp)
 
         print(f"\nDQI Results:")
-        print_dqi_results("Run A (Control)", dqi_A)
-        print_dqi_results("Run B (Treatment)", dqi_B)
+        print_dqi_results("Control", dqi_A)
+        print_dqi_results("Treatment", dqi_B)
 
     print_experiment_conclusion(eval_metrics, conv_A, conv_B, shift_A, shift_B, dqi_A, dqi_B)
+
+    metrics_dict = {
+        "Control": {
+            "convergence": conv_A,
+            "self_shift": shift_A,
+            "covd_pre": covd_pre_A,
+            "covd_post": covd_post_A,
+        },
+        "Treatment": {
+            "convergence": conv_B,
+            "self_shift": shift_B,
+            "covd_pre": covd_pre_B,
+            "covd_post": covd_post_B,
+        }
+    }
+    
+    if dqi_A and dqi_B:
+        metrics_dict["Control"]["dqi"] = dqi_A
+        metrics_dict["Treatment"]["dqi"] = dqi_B
+        
+    return metrics_dict
 

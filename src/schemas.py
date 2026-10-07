@@ -50,7 +50,7 @@ class ChatEntry(TypedDict):
 class ExperimentResult(TypedDict):
     stances_pre: Dict[str, str]
     stances_post: Dict[str, str]
-    chat_history: List[ChatEntry]
+    chat_history: Dict[str, List[ChatEntry]]
 
 class DQIScores(TypedDict):
     level_of_justification: float

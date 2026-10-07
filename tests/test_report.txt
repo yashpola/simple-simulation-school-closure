@@ -5,6 +5,6 @@ test_extract_tags_missing_public (test_sanity.TestSanityCheck.test_extract_tags_
 test_extract_tags_no_tags (test_sanity.TestSanityCheck.test_extract_tags_no_tags) ... ok
 
 ----------------------------------------------------------------------
-Ran 5 tests in 0.736s
+Ran 5 tests in 1.986s
 
 OK

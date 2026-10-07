@@ -23,10 +23,15 @@ This repository follows strict structural and typing paradigms designed for clar
 
 ## 4. Total Configuration Abstraction (No Hardcoded Prompts)
 - Absolutely zero prompt strings or textual templates should exist in the Python logic.
-- Extract all system, system-augmented, and user prompts into `data/config.json`.
+- Extract all system, system-augmented, and user prompts into `data/<uid>/config.json`.
 - When using `dict.get()`, do not use the raw string as the default fallback. Ensure the fallback defaults to empty strings (`""`), forcing the pipeline to rely strictly on the external configuration.
 - Group the `config.json` logically (e.g. `model_config`, `system_prompts`, `user_prompts`, `deliberation_config`) rather than using a flat structure. 
 
 ## 5. Defensive LLM Parsing
 - Wrap all LLM parsing logic in robust error handling (`try/except`).
 - Assume the LLM might hallucinate markdown blocks (e.g., stripping ```json wrappers) when fetching structured output.
+
+## 6. Experiment Output Indexing
+- All experiment run outputs (e.g., transcripts, stances, evaluations, and final reports) and the configuration file (`config.json`) must be saved into a dynamically indexed sub-directory inside `data/`.
+- The directory must use the `expXXX` string format (e.g., `data/exp000/`, `data/exp001/`).
+- The orchestrator (`src/main.py`) must auto-detect existing directories and increment the UID to prevent overwriting past experiment runs.
