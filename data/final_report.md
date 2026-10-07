@@ -1,71 +1,35 @@
-# Experiment Report: The Impact of Internal Reflection on Consensus
+# Final Report: Impact of Internal Reflection on Consensus
 
-## 1. Overview
-This experiment tests whether requiring Large Language Models (LLMs) to internally reflect before speaking improves the quality of deliberation and consensus building in simulated citizen panels. 
+## 1. Executive Summary
+This report summarizes the findings of an automated LLM citizen panel experiment testing whether prompting agents to engage in internal reflection (`<private_scratchpad>`) prior to responding increases their willingness to compromise, semantic convergence, and overall discourse quality. 
 
-We simulated a debate about a highly emotional topic: the merger of a local heritage primary school. 
+Our hypothesis was that a "System 2" reflective step would lead to more constructive, consensus-building dialogue compared to a "System 1" direct-response baseline.
 
-## 2. Configuration
-**Topic**: The MOE is proposing to merge your local heritage primary school with a newer school 3km away due to falling enrollment. Discuss the impacts and try to reach a consensus on a recommendation to the MOE.
+## 2. Experimental Setup
+- **Topic**: MOE School Mergers (Singapore)
+- **Personas**: MOE Pragmatist vs. Stressed Teacher
+- **Deliberation Structure**: 3 rounds of back-and-forth dialogue.
+- **Controlled Baseline**: Pre-debate stances were generated exactly **once** before splitting the timeline into Run A (Control) and Run B (Treatment) to ensure identical initial embedding states.
 
-**Personas & Model Assignments**:
-- **MOE Official**: `meta-llama/Llama-3.3-70B-Instruct-Turbo`
-  - *Description*: You are a Ministry of Education official. Your main concern is efficiency, falling birth rates, and ensuring every school has a critical mass of students for diverse social mixing and viability. You strongly support the school merger.
-- **Teacher**: `meta-llama/Llama-3.3-70B-Instruct-Turbo`
-  - *Description*: You are a teacher at the heritage school. You are deeply opposed to the merger because it disrupts the local community, threatens job security, and destroys the school's heritage.
+## 3. Results (Latest Run)
 
-**Pipeline**:
-- **Run A (Control)**: Agents respond directly to each other.
-- **Run B (Treatment)**: Agents are prompted to generate a `<private_scratchpad>` (internal monologue) evaluating the arguments made by others *before* outputting their `<public_response>`.
+| Metric | Run A (Control) | Run B (Treatment) | Delta |
+| :--- | :--- | :--- | :--- |
+| **Convergence** | 0.8804 | 0.8738 | -0.0066 |
+| **Self-Shift** | 0.2125 | 0.1790 | -0.0335 |
+| **Plurality (CovD)** | Pre = 0.1967 -> Post = 0.2249 | Pre = 0.1967 -> Post = 0.2365 | +0.0116 |
+| **DQI Score** | 14.83 (Interactivity: 2.83) | 14.67 (Interactivity: 2.67) | -0.16 |
 
-## 3. Evaluation Metrics Added
-To evaluate the simulation, we extract pre-debate and post-debate stances, along with the raw chat history, and automatically calculate the following metrics:
+### Analysis of the Mathematical Baselines
+Because of our architectural fix, the `Plurality (CovD) Pre` score for both Run A and Run B was perfectly identical (`0.1967`). This confirms that the baseline was strictly controlled and any subsequent deviations in the Post scores are purely attributable to the experimental intervention (the `<private_scratchpad>`).
 
-1. **Pre/Post Stance Similarity (Convergence)**: Cosine similarity of the agents' final stances. Higher means tighter consensus.
-2. **Stubbornness Index (Self-Shift)**: Cosine distance between an agent's *own* pre-debate stance and post-debate stance.
-3. **Plurality of Opinion (CovD)**: The embedding covariance matrix determinant. We compute the determinant of the Gram matrix of the stance embeddings. This calculates the *volume* spanned by the opinions. A higher CovD indicates a wider, more orthogonal divergence of opinions.
-4. **Discourse Quality Index (DQI)**: Evaluated using an LLM-as-a-Judge (turn-by-turn). The judge model evaluates each conversational turn sequentially (with context of previous turns) across 5 standardized DQI components, scoring from 1 to 3:
-   - *Level of Justification*: Depth of reasoning (using causal markers like "because", "therefore").
-   - *Content of Justification*: Narrow self-interest vs broader collective goods.
-   - *Respect*: Acknowledging opposing views with civility.
-   - *Constructive Politics*: Generating concrete proposals, compromises, or institutional solutions.
-   - *Interactivity*: Directly engaging with and responding to each other's arguments.
+## 4. Conclusion
+In this specific execution:
+- **❌ Treatment did NOT increase consensus.** Convergence was slightly higher in the Control run.
+- **❌ Treatment did NOT increase willingness to change stance.** Agents in the Control run exhibited a larger self-shift.
+- **❌ Treatment did NOT improve overall Discourse Quality.** DQI was slightly lower in the Treatment run, primarily due to a minor drop in interactivity.
 
-## 4. Results (Latest Run)
+### Hypothesis Verdict
+Based on this single iteration, we **fail to reject the null hypothesis ($H_0$)**. Internal reflection did not significantly improve deliberation outcomes; in fact, it slightly hindered convergence and interactivity compared to direct dialogue. 
 
-```text
-========================================
---- Analysis ---
-========================================
-Run A (Control):
-  Convergence = 0.8456, Self-Shift = 0.1642
-  Plurality (CovD): Pre = 0.2601 -> Post = 0.2849
-  DQI (Total = 14.67):
-    - Level of Justification: 3.00
-    - Content of Justification: 3.00
-    - Respect: 2.83
-    - Constructive Politics: 3.00
-    - Interactivity: 2.83
-
-Run B (Treatment):
-  Convergence = 0.8881, Self-Shift = 0.2106
-  Plurality (CovD): Pre = 0.2915 -> Post = 0.2113
-  DQI (Total = 14.67):
-    - Level of Justification: 3.00
-    - Content of Justification: 3.00
-    - Respect: 3.00
-    - Constructive Politics: 3.00
-    - Interactivity: 2.67
-
-Conclusion:
-✅ Treatment increased consensus (Higher Convergence).
-✅ Treatment increased willingness to change stance (Higher Self-Shift).
-❌ Treatment did NOT improve overall Discourse Quality Index.
-```
-
-## 5. Insights & Discussion
-The addition of the internal reflection step yielded fascinating dynamics:
-
-* **More Willingness to Change (Self-Shift)**: By privately processing opposing arguments in their scratchpads, the agents demonstrated a much higher willingness to move away from their entrenched starting positions (Self-Shift: 0.21 in Treatment vs 0.16 in Control).
-* **Significant Decrease in Plurality (CovD)**: In the control run, the plurality (diversity of opinion) actually *increased* (0.26 ➔ 0.28) over the debate as the agents dug their heels in. In the treatment run, plurality substantially *decreased* (0.29 ➔ 0.21) because the agents successfully converged on a shared middle-ground.
-* **LLM-as-a-Judge Ceiling Effect (DQI)**: We shifted DQI scoring from a word-count heuristic to a turn-by-turn LLM-as-a-Judge evaluation. Initially, the LLM suffered from a massive "ceiling effect," automatically giving perfect scores to both runs due to the high syntactic quality of the agents' responses. However, by introducing strict domain-specific **few-shot examples** explicitly defining what a "Score 1" Interactivity (a parallel monologue) looks like vs a "Score 3" Interactivity (a direct rebuttal), the judge model successfully calibrated. It correctly identified that the Treatment run had slightly *lower* Interactivity (2.67) than the Control run (2.83). While not as extreme as the heuristic's penalty (which dropped to 0.17), the LLM judge provides a much more nuanced and realistic assessment that forcing agents to use a `<private_scratchpad>` slightly degrades their public conversational engagement.
+*(Note: LLMs exhibit natural variance at temperature=0.7. A statistically significant conclusion would require running this pipeline $N=100$ times and performing a paired t-test on the distributions of these metrics.)*

@@ -18,7 +18,7 @@ class TestAPICheck(unittest.TestCase):
         
     def test_models_accessible(self):
         # We test a simple generation for each model to ensure they are accessible
-        models = set(self.config.get("model_assignments", {}).values())
+        models = set(self.config.get("model_config", {}).get("model_assignments", {}).values())
         
         for model in models:
             try:

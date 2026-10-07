@@ -38,8 +38,10 @@ simple-simulation-school-closure/
 │   ├── results_A.json    # Auto-generated transcript and stances for Control
 │   └── results_B.json    # Auto-generated transcript and stances for Treatment
 ├── src/
-│   ├── main.py           # Entry point. Loads config and orchestrates the experiment pipeline.
-│   └── experiment.py     # Core logic (run_experiment, metrics calculations, LLM calling)
+│   ├── main.py           # Entry point. Loads config and coordinates modules.
+│   ├── deliberation.py   # Simulation engine, agent prompting, and chat loops.
+│   ├── evaluation.py     # Metrics computation (Cosine, CovD, DQI LLM Judge).
+│   └── schemas.py        # TypedDict definitions enforcing strict Python typing.
 └── tests/
     └── api_check.py      # Unit tests for API readiness and sanity checks
 ```
@@ -48,16 +50,24 @@ simple-simulation-school-closure/
 The entire experiment is parameterized in `config.json`. This allows for easy swapping of models, personas, and metrics without altering the source code.
 
 **Key Config Sections:**
-* `model_assignments`: Maps personas (e.g., "MOE Official", "Teacher") and the "DQI_Judge" to specific LLM endpoints (e.g., `meta-llama/Llama-3.3-70B-Instruct-Turbo`).
-* `personas`: Defines the ID, Role, and system description for each agent.
-* `eval_metrics`: An array specifying which metrics to run (e.g., `["cosine_similarity", "covd", "dqi"]`).
-* `runs`: Defines the Control and Treatment loops, specifying the `system_prompt_addition` and whether to parse `<private_scratchpad>` tags.
-* `dqi_judge_prompt`: The master prompt containing the rubric and few-shot examples used by the LLM-as-a-Judge.
+* `model_config`: Contains `model_assignments` (mapping personas to specific LLM endpoints) and `model_parameters` (temperatures, context window).
+* `system_prompts`: Contains all hardcoded string templates abstracted from the codebase (`topic_prompt`, `pre_stance_prompt`, `post_stance_prompt`, `dqi_judge_prompt`).
+* `user_prompts`: Defines the agent `personas` (ID, Role, description) and the `turn_prompt`.
+* `deliberation_config`: Configures the simulation mechanics (`max_turns_per_agent`), the `runs` (Control/Treatment definitions), and `eval_metrics`.
 
 ## 6. Execution Flow
 1. **Initialization (`src/main.py`)**: Loads `config.json` and environmental variables (API keys).
-2. **Pre-Debate**: Agents generate a 1-paragraph stance based on their persona.
-3. **Deliberation Loop (`src/experiment.py`)**: Agents take turns responding for $N$ rounds. The chat history is appended contextually.
-4. **Post-Debate**: Agents generate a final 1-paragraph stance.
+2. **Pre-Debate Baseline**: A single, shared set of pre-debate stances is generated for all personas to ensure a controlled baseline.
+3. **Deliberation Loop (`src/deliberation.py`)**: For each run (Control and Treatment), agents take turns responding for $N$ rounds.
+4. **Post-Debate**: Agents generate a final 1-paragraph stance after their respective deliberation loops.
 5. **Artifacts Saved**: Raw JSON transcripts and stances are saved to `data/`.
 6. **Analysis**: Evaluates Convergence, Self-Shift, CovD, and calls the LLM DQI Judge turn-by-turn on the transcripts. Outputs a final terminal report.
+
+## 7. Final Reporting
+After running the experiment pipeline (`./run.sh`), the terminal will output the Cosine, CovD, and DQI metrics. An autonomous agent or human researcher should manually synthesize these terminal outputs into a formal markdown artifact located at `data/final_report.md`. 
+
+A properly generated `final_report.md` should include:
+1. **Executive Summary**: A brief recap of the experiment and core hypothesis.
+2. **Experimental Setup**: A summary of the topic, personas, and methodology (explicitly mentioning the shared pre-debate baseline).
+3. **Results**: A markdown table comparing the metrics (Convergence, Self-Shift, CovD, DQI) between Run A and Run B.
+4. **Conclusion**: An analysis of the metrics, specifically checking if the identical pre-debate Plurality baselines held, and delivering a final verdict on whether the null hypothesis ($H_0$) was rejected or retained based on the data.

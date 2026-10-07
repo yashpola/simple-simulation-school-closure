@@ -6,9 +6,11 @@ This repository contains an automated experiment pipeline to test how internal r
 **Alternative Hypothesis ($H_1$)**: Requiring an internal reflection step increases willingness to compromise, results in tighter semantic convergence, and affects discourse quality.
 
 ## Project Structure
-- `data/config.json`: Master configuration for the experiment. Controls the topic, personas, model assignments (including the DQI Judge), evaluation metrics, and the few-shot judge prompt.
+- `data/config.json`: Master configuration for the experiment. Fully parameterized and grouped into `model_config`, `system_prompts`, `user_prompts`, and `deliberation_config`.
 - `src/main.py`: The entry point script that orchestrates the pipeline.
-- `src/experiment.py`: Core deliberation logic, chat orchestration, and metric calculations (Cosine Similarity, CovD, LLM-as-a-Judge DQI).
+- `src/deliberation.py`: Handles the core simulation engine, LLM API calls, and multi-agent chat orchestration.
+- `src/evaluation.py`: Handles post-run mathematical calculations (Cosine, CovD) and the LLM-as-a-Judge DQI evaluations.
+- `src/schemas.py`: Contains strict Python type definitions (`TypedDict`) mapping to the configuration structure.
 - `tests/`: Unit tests and API readiness checks.
 
 ## Setup
@@ -55,10 +57,10 @@ python src/main.py --config data/config.json
 ## How It Works
 
 The script will:
-1. Generate pre-debate stances for all personas.
-2. Run **Run A** (Control) where agents respond directly to each other.
-3. Run **Run B** (Treatment) where agents must write internal thoughts in `<private_scratchpad>` before responding.
-4. Generate post-debate stances.
+1. Generate **shared pre-debate stances** once for all personas to ensure a mathematically identical baseline.
+2. Execute **Run A (Control)** where agents respond directly to each other.
+3. Execute **Run B (Treatment)** where agents must write internal thoughts in `<private_scratchpad>` before responding.
+4. Generate post-debate stances for each run based on their respective chats.
 5. Compute and print the analytical metrics:
    - **Convergence**: Cosine similarity of final stances using local `SentenceTransformer` embeddings.
    - **Self-Shift**: Cosine distance showing how much agents changed their own minds.

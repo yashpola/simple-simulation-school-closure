@@ -4,7 +4,7 @@ import os
 
 # Add src to path to import experiment logic
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-from experiment import extract_tags
+from deliberation import extract_internal_monologue_and_public_response as extract_tags
 
 class TestSanityCheck(unittest.TestCase):
     
