@@ -81,7 +81,7 @@ The entire experiment is parameterized in `config.json`. This allows for easy sw
 
 ## 7. Final Reporting
 
-After running the experiment pipeline (`./run.sh`), the terminal will output the Cosine, CovD, and DQI metrics. An autonomous agent or human researcher should manually synthesize these terminal outputs into a formal markdown artifact located at `data/<uid>/final_report.md`. Additionally, PDF transcripts of the chat histories (`results_control_transcript.pdf` and `results_treatment_transcript.pdf`) should be generated for both Control and Treatment runs to facilitate reading.
+After running the experiment pipeline via `src/main.py`, the terminal will output the Cosine, CovD, and DQI metrics. An autonomous agent or human researcher should manually synthesize these terminal outputs into a formal markdown artifact located at `data/<uid>/final_report.md`. Additionally, PDF transcripts of the chat histories (`results_control_transcript.pdf` and `results_treatment_transcript.pdf`) should be generated for both Control and Treatment runs to facilitate reading.
 
 A properly generated `final_report.md` should include:
 
