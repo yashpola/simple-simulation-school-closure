@@ -45,7 +45,6 @@ class ChatEntry(TypedDict):
     agent: str
     public_response: str
     private_scratchpad: Optional[str]
-    raw_response: str
 
 class ExperimentResult(TypedDict):
     stances_pre: Dict[str, str]

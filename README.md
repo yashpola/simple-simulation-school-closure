@@ -6,8 +6,9 @@ This repository contains an automated experiment pipeline to test how internal r
 **Alternative Hypothesis ($H_1$)**: Requiring an internal reflection step increases willingness to compromise, results in tighter semantic convergence, and affects discourse quality.
 
 ## Project Structure
+
 - `data/<uid>/config.json`: Master configuration specific to the experiment run. Fully parameterized and grouped into `model_config`, `system_prompts`, `user_prompts`, and `deliberation_config`.
-- `docs/`: Contains the experiment design document and coding guidelines.
+- `docs/`: Contains an agentic-focused experiment design document & coding guidelines as well as a human-written experiment details document.
 - `src/main.py`: The entry point script that orchestrates the pipeline.
 - `src/deliberation.py`: Handles the core simulation engine, LLM API calls, and multi-agent chat orchestration.
 - `src/evaluation.py`: Handles post-run mathematical calculations (Cosine, CovD) and the LLM-as-a-Judge DQI evaluations.
@@ -17,16 +18,19 @@ This repository contains an automated experiment pipeline to test how internal r
 ## Setup
 
 1. **Install dependencies:**
+
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Configure your Together AI API Key:**
-   The script uses the standard OpenAI python client configured specifically for Together AI.
+2. **Configure your API Key:**
+   The script uses the standard OpenAI python client, so it can connect to OpenAI or any OpenAI-compatible service (like Together AI, vLLM, etc.) by specifying a base URL.
    Create a `.env` file in the root directory.
 
    ```ini
-   TOGETHER_API_KEY=your_together_api_key
+   OPENAI_API_KEY=your_api_key
+   # Optional: Set this if you are using a compatible service like Together AI
+   # OPENAI_BASE_URL=https://api.together.xyz/v1
    ```
 
 ## Running the Tests & Experiment
@@ -34,36 +38,56 @@ This repository contains an automated experiment pipeline to test how internal r
 We have provided a convenient shell script that will run the test suite and then automatically execute the main experiment pipeline if the tests pass.
 
 ### What is tested?
+
 1. **API Check (`tests/test_api_check.py`)**:
-   - Verifies that `TOGETHER_API_KEY` is properly set in your environment.
+   - Verifies that `OPENAI_API_KEY` is properly set in your environment.
    - Pings every LLM model specified in your `config.json`'s `model_assignments` to ensure the endpoint is responsive and you have access rights.
 2. **Sanity Check (`tests/test_sanity.py`)**:
    - Validates the regex logic in `extract_tags` to ensure the system correctly isolates `<private_scratchpad>` thoughts from `<public_response>` dialogue.
 
-```bash
-./run.sh
-```
+Running Tests:
 
-Alternatively, you can run them manually:
 ```bash
 # Run tests
 python -m unittest discover -s tests
+```
 
+Running Experiment:
+
+```bash
 # Run experiment
-python src/main.py --config data/exp000/config.json
+python src/main.py --config <path_to_config.json>
 ```
 
 ## How It Works
 
-The script will:
-1. Generate **shared pre-deliberation stances** once for both agents to ensure a mathematically identical baseline.
-2. Execute **Control** where agents respond directly to each other.
-3. Execute **Treatment** where agents must write internal thoughts in `<private_scratchpad>` before responding.
-4. Generate post-deliberation stances for each run based on their respective chats.
-5. Compute and print the analytical metrics:
+Given a valid `data/config.json`, the script will:
+
+1. Digest the configuration details into a usable Python object using the specified `config.json`.
+2. Create the OpenAI client for access to a compute service using the `.env`.
+3. Generate **shared pre-deliberation stances** once for both agents to ensure a mathematically identical baseline.
+4. Execute **Control** where agents respond directly to each other.
+5. Execute **Treatment** where agents must write internal thoughts in `<private_scratchpad>` before responding.
+6. Generate post-deliberation stances for each run based on their respective chats.
+7. Compute and print the analytical metrics:
    - **Convergence**: Cosine similarity of final stances using local `SentenceTransformer` embeddings.
    - **Self-Shift**: Cosine distance showing how much agents changed their own minds.
    - **CovD (Plurality)**: Determinant of the embedding Gram Matrix, showing the volume/diversity of opinions.
    - **DQI (LLM-as-a-Judge)**: A turn-by-turn evaluation of the transcript across 5 standardized discourse dimensions, calibrated using strict few-shot examples.
 
-Raw results (transcripts and stances) for both runs will be saved in an indexed sub-directory inside `data/` (e.g., `data/exp000/results_control.json` and `data/exp000/results_treatment.json`). The directory uses an `expXXX` format that increments automatically for each run.
+Raw results (transcripts and stances) for both runs will be saved in an automatically-created and indexed sub-directory inside `data/` (e.g., `data/exp000/results_control.json` and `data/exp000/results_treatment.json`). The directory uses an `expXXX` format that increments automatically for each run.
+
+Essentially, the pipeline abides by this contract:
+
+> **IF** the user specifies the `data/config.json` properly and loads in a valid API key and/or Base URL for an OpenAI-compatible service,
+>
+> **THEN** the pipeline will run an $N$-turn deliberation between 2 agents using the config-specified model(s) for both the Control & Treatment, and output the turn-based chat histories of each run in separate `json` files. The pipeline will also output an `evals.json` with the config-specificied metrics. All outputs will be saved in an automatically created & indexed sub-directory of `data`.
+
+## Extra Notes
+
+The script does NOT programmatically generate:
+
+1. Results Transcript PDFs
+2. Final Report Markdown
+
+As are seen in `data/exp000`. These were agentically generated by a user after-the-fact. Please refer to Section 7 of `docs/experiment_design_school_closures.md` for more details.

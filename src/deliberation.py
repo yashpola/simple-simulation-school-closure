@@ -143,14 +143,12 @@ def conduct_deliberation(
             # Strip any role prefix like [Heritage School Teacher]: or MOE Official:
             role_pattern = r'^(?:\[.*?\]|(?:Heritage School Teacher|MOE Official|Teacher)):?\s*'
             public_response = re.sub(role_pattern, '', public_response, flags=re.IGNORECASE)
-            raw_response = re.sub(role_pattern, '', raw_response, flags=re.IGNORECASE)
 
             chat_history[turn_key].append(
                 {
                     "agent": p["id"],
                     "public_response": public_response,
                     "private_scratchpad": scratchpad,
-                    "raw_response": raw_response,
                 }
             )
             print(f"[{p['id']} - {p.get('role', '')}]: {public_response[:120]}...\n")

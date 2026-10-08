@@ -26,13 +26,13 @@ def main() -> None:
 
     # Load env vars for API key
     load_dotenv(dotenv_path=os.path.join(project_root, ".env"))
-    if not os.environ.get("TOGETHER_API_KEY"):
-        print("Warning: TOGETHER_API_KEY environment variable is not set.")
-        print("Please set TOGETHER_API_KEY in your .env file.\n")
+    if not os.environ.get("OPENAI_API_KEY"):
+        print("Warning: OPENAI_API_KEY environment variable is not set.")
+        print("Please set OPENAI_API_KEY in your .env file.\n")
 
     client = OpenAI(
-        api_key=os.environ.get("TOGETHER_API_KEY"),
-        base_url="https://api.together.xyz/v1",
+        api_key=os.environ.get("OPENAI_API_KEY"),
+        base_url=os.environ.get("OPENAI_BASE_URL"),
     )
 
     # Load config

@@ -1,5 +1,5 @@
-openai
-sentence-transformers
-numpy
-python-dotenv
+openai==3.24.0
+sentence-transformers==6.1.0
+numpy==1.26.4
+python-dotenv==0.21.0
 

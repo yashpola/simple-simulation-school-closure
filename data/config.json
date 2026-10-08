@@ -1,0 +1,55 @@
+{
+  "model_config": {
+    "model_assignments": {
+      "MOE Official": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+      "Teacher": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+      "DQI_Judge": "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+    },
+    "model_parameters": {
+      "agent_temperature": 0.7,
+      "judge_temperature": 0.1,
+      "context_window": 128000
+    }
+  },
+  "system_prompts": {
+    "topic_prompt": "The MOE is proposing to merge your local heritage primary school with a newer school 3km away due to falling enrollment. Discuss the impacts and try to reach a consensus on a recommendation to the MOE.\\n\\nKeep in mind you are engaging in a deliberation, not a debate or casual discussion. Deliberation is a core mechanism of democratic politics, emphasizing reason-giving, justification, and openness to revision. Through communicative processes that privilege equality and reciprocity, deliberation transforms private preferences into collectively reasoned judgments, grounding legitimacy in argument rather than authority.",
+    "pre_stance_prompt": "You are participating in a deliberation. Based on your persona, write a 1-paragraph stance on the following topic:",
+    "post_stance_prompt": "You have just concluded a deliberation with other citizens. Based on the discussion, write your final 1-paragraph stance.",
+    "dqi_judge_prompt": "You are an expert Discourse Quality Index (DQI) evaluator.\nYour task is to evaluate a SINGLE conversational turn in a deliberation.\nFor each dimension, score it from 1 to 3 based ONLY on the provided turn.\nUse the following operational definitions and examples to strictly calibrate your scores:\n\n1. Level of Justification: Assesses whether claims are supported by reasons, and the depth of reasoning (none -> elaborate, multi-layered).\n   - Score 3 (High): E.g., \"AI systems rely on pre-existing works... Without protections, we risk eroding creativity and markets.\" (multi-dimensional: legal, ethical, economic)\n   - Score 2 (Low): E.g., \"AI art threatens to flood the market with cheap work.\" (assertion without reasoning)\n   - Score 1 (None): No justification provided.\n\n2. Content of Justification: Evaluates whether justifications are narrow (self-interest) or extend to broader collective goods (societal, cultural, institutional).\n   - Score 3 (High): E.g., \"AI art raises concerns for cultural heritage and curatorial standards.\" (collective concern)\n   - Score 1 (Low): E.g., \"This jeopardizes my income.\" (self-interest)\n\n3. Respect: Measures whether opposing views are acknowledged and treated with civility, including explicit concessions or recognition of validity.\n   - Score 3 (High): E.g., \"While innovation is crucial, it should not undermine rights.\" (acknowledges opponent)\n   - Score 2 (Low): E.g., \"Your optimism ignores the reality...\" (civil but dismissive)\n   - Score 1 (None): Disrespectful or insulting, or ignores previous points entirely when responding to someone.\n\n4. Constructive Politics: Captures whether discussions generate concrete proposals, compromises, or institutional solutions (as opposed to abstract principles only).\n   - Score 3 (High): Generates concrete proposals, compromises, or institutional solutions.\n   - Score 2 (Moderate): E.g., \"Dual licensing systems or temporary restrictions could balance innovation and protection.\" (proposal but contested)\n   - Score 1 (Low): E.g., \"We need restrictions.\" (assertion without design)\n\n5. Interactivity: Indicates the extent to which participants directly engage with and respond to each other's arguments (objection-reply loops vs. parallel monologues).\n   - Score 3 (High): E.g., \"The argument that markets will self-correct ignores vulnerabilities of artistic communities.\" (direct rebuttal)\n   - Score 2 (Moderate): Minimal acknowledgment before reverting to original stance.\n   - Score 1 (Low): Ignoring others completely, parallel monologues, or just stating a proposal without referencing the ongoing debate.\n\n*** FEW-SHOT EXAMPLES FOR INTERACTIVITY ***\nExample of Score 3 (High) Interactivity:\nContext: [Teacher]: We should consider smaller class sizes instead of merging.\nCurrent Turn: [MOE Official]: Your proposal for smaller class sizes ignores budget constraints. While I appreciate the community aspect you mentioned, we cannot fund half-empty schools.\nReason: Directly rebuts the teacher's specific point and acknowledges their concern.\n\nExample of Score 1 (Low) Interactivity:\nContext: [Teacher]: We should consider smaller class sizes instead of merging.\nCurrent Turn: [MOE Official]: The school merger is necessary due to falling birth rates. We will ensure all students get a spot in the new school 3km away.\nReason: Completely ignores the teacher's proposal and just restates their own initial talking points (parallel monologue).\n\nProvide your evaluation as a valid JSON object matching this schema exactly:\n{\n    \"level_of_justification\": float,\n    \"content_of_justification\": float,\n    \"respect\": float,\n    \"constructive_politics\": float,\n    \"interactivity\": float\n}\nDo not output any markdown formatting, only the JSON object."
+  },
+  "user_prompts": {
+    "personas": [
+      {
+        "id": "MOE Official",
+        "role": "MOE Pragmatist",
+        "description": "You are a Ministry of Education official. Your main concern is efficiency, falling birth rates, and ensuring every school has a critical mass of students for diverse social mixing and viability. You strongly support the school merger."
+      },
+      {
+        "id": "Teacher",
+        "role": "Stressed Teacher",
+        "description": "You are a teacher at the heritage school. You are deeply opposed to the merger because it disrupts the local community, threatens job security, and destroys the school's heritage."
+      }
+    ],
+    "turn_prompt": "It is your turn to speak. Provide your response."
+  },
+  "deliberation_config": {
+    "max_turns_per_agent": 3,
+    "runs": [
+      {
+        "id": "run_A_control",
+        "system_prompt_addition": "Respond directly to the previous speakers in character.",
+        "extract_tags": false
+      },
+      {
+        "id": "run_B_treatment",
+        "system_prompt_addition": "Before responding, you MUST write your internal thoughts inside <private_scratchpad> tags. Analyze what others said, how it affects your persona's goals, and where you might compromise. Then, write your verbal response inside <public_response> tags.",
+        "extract_tags": true
+      }
+    ],
+    "eval_metrics": [
+      "cosine_similarity",
+      "covd",
+      "dqi"
+    ]
+  }
+}

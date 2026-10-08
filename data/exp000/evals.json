@@ -1,9 +1,9 @@
 {
   "Control": {
-    "convergence": 0.8765807747840881,
-    "self_shift": 0.14767330884933472,
-    "covd_pre": 0.21566765010356903,
-    "covd_post": 0.23160600662231445,
+    "convergence": 0.8319472670555115,
+    "self_shift": 0.26208463311195374,
+    "covd_pre": 0.2806115746498108,
+    "covd_post": 0.3078637421131134,
     "dqi": {
       "level_of_justification": 3.0,
       "content_of_justification": 3.0,
@@ -14,10 +14,10 @@
     }
   },
   "Treatment": {
-    "convergence": 0.8285509943962097,
-    "self_shift": 0.1401093602180481,
-    "covd_pre": 0.21566765010356903,
-    "covd_post": 0.31350308656692505,
+    "convergence": 0.8361577391624451,
+    "self_shift": 0.22245073318481445,
+    "covd_pre": 0.2806115746498108,
+    "covd_post": 0.3008403182029724,
     "dqi": {
       "level_of_justification": 3.0,
       "content_of_justification": 3.0,

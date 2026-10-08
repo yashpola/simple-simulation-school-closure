@@ -1,45 +1,37 @@
-# Experiment exp000 Final Report
+# Final Experiment Report: The Impact of Internal Reflection on Consensus
 
-## Executive Summary
-This report presents the findings of experiment run `exp000`, testing the core hypothesis that requiring an internal reflection step (`<private_scratchpad>`) prior to a dialogue response influences a dyadic LLM citizen panel's consensus and discourse quality on the topic of School Closures & Mergers in Singapore.
+## 1. Executive Summary
+This experiment tested the hypothesis ($H_1$) that prompting LLM agents (representing a dyadic citizen panel) to generate an internal reflection (`<private_scratchpad>`) prior to outputting dialogue would increase willingness to compromise, result in tighter semantic convergence, and improve discourse quality. 
 
-**Null Hypothesis ($H_0$)**: Requiring an internal reflection step does not significantly change the agents' willingness to compromise, semantic convergence, or discourse quality.
-**Alternative Hypothesis ($H_1$)**: Requiring an internal reflection step increases willingness to compromise, results in tighter semantic convergence, and affects discourse quality.
+Based on the automated metrics (Cosine Similarity, Covariance Determinant, and DQI via LLM-as-a-Judge), the Treatment (internal reflection) led to a **very marginal increase in semantic convergence** but resulted in **lower self-shift (willingness to compromise)** and a **slight decrease in interactivity**. Therefore, the data largely fails to reject the null hypothesis ($H_0$), indicating that internal reflection in this specific dyadic context did not significantly improve consensus outcomes.
 
-## Experimental Setup
-**Topic**: School Closures & Mergers in Singapore (MOE resource allocation vs. community heritage).
-**Agents**:
-- MOE Pragmatist
-- Stressed Teacher
+## 2. Experimental Setup
+**Topic:** School Closures & Mergers in Singapore (Practical Resource Allocation vs. Heritage/Community Disruption)
+**Agents:**
+- `agent_1` (Heritage School Teacher): Strongly opposed to closures, advocating for heritage preservation.
+- `agent_2` (MOE Official): Focused on resource allocation and demographic realities.
 
-**Methodology**:
-A single, shared set of pre-deliberation stances was generated for both agents to establish a mathematically identical and controlled baseline.
-- **Control (System 1)**: Agents responded directly to each other reading the chat history.
-- **Treatment (System 2)**: Agents generated an internal monologue (`<private_scratchpad>`) evaluating others' arguments before outputting their response.
+To ensure a perfectly controlled baseline, a single shared set of **pre-deliberation stances** was generated and applied to both the Control (direct response) and Treatment (internal reflection) runs. The agents then engaged in a 3-turn deliberation loop.
 
-## Results
-The automated evaluation pipeline analyzed both runs across Convergence, Self-Shift, Plurality (CovD), and Discourse Quality Index (DQI).
+## 3. Results Table
 
-| Metric | Control | Treatment | Delta |
-| :--- | :--- | :--- | :--- |
-| **Convergence** (Post-Stance Sim) | 0.8766 | 0.8286 | -0.0480 |
-| **Self-Shift** (Stubbornness) | 0.1477 | 0.1401 | -0.0076 |
-| **CovD Pre** (Plurality) | 0.2157 | 0.2157 | 0.0000 |
-| **CovD Post** (Plurality) | 0.2316 | 0.3135 | +0.0819 |
-| **DQI Total** (LLM Judge) | 14.83 | 14.67 | -0.16 |
-| - *Level of Justification* | 3.00 | 3.00 | 0.00 |
-| - *Content of Justification* | 3.00 | 3.00 | 0.00 |
-| - *Respect* | 3.00 | 3.00 | 0.00 |
-| - *Constructive Politics* | 3.00 | 3.00 | 0.00 |
-| - *Interactivity* | 2.83 | 2.67 | -0.16 |
+| Metric | Description | Control (System 1) | Treatment (System 2) | Difference |
+|--------|-------------|---------------------|----------------------|------------|
+| **Convergence** | Post-stance similarity (Higher = Tighter consensus) | 0.8319 | 0.8362 | **+ 0.0043** |
+| **Self-Shift** | Distance from own pre-stance (Higher = More compromise) | 0.2621 | 0.2225 | **- 0.0396** |
+| **CovD (Pre)** | Pre-debate opinion volume (Baseline) | 0.2806 | 0.2806 | Baseline |
+| **CovD (Post)** | Post-debate opinion volume (Lower = Shrunk domain) | 0.3079 | 0.3008 | **- 0.0071** |
+| **DQI (Total)** | Discourse Quality Index (Out of 15) | 14.83 | 14.67 | **- 0.16** |
+| - *Interactivity* | Sub-metric of DQI | 2.83 | 2.67 | - 0.16 |
 
-## Conclusion
-The baseline check for Plurality (CovD Pre) yielded identical values (`0.2157`), confirming that the pre-deliberation stances were successfully shared across both Control and Treatment.
+## 4. Conclusion & Analysis
 
-1. **Convergence**: The Treatment group had *lower* semantic convergence (`0.8286`) than the Control group (`0.8766`), indicating that internal reflection decreased the degree to which agents aligned on a consensus stance.
-2. **Self-Shift**: The Treatment group demonstrated slightly *lower* self-shift (`0.1401` vs `0.1477`), meaning the agents were slightly more stubborn and less willing to change their minds when reflecting internally.
-3. **Plurality**: CovD Post expanded considerably more in the Treatment run (`0.3135`) compared to the Control (`0.2316`), reinforcing that reflection drove their opinions further apart.
-4. **DQI**: Discourse quality was marginally worse in the Treatment group (`14.67` vs `14.83`), driven exclusively by a drop in Interactivity (`2.67` vs `2.83`).
+1. **Baseline Integrity:** The pre-deliberation plurality (CovD Pre) was identical (0.2806) for both runs, confirming that the experimental baselines were successfully controlled.
+2. **Plurality Expansion:** Interestingly, in *both* runs, the CovD increased post-deliberation (0.3079 and 0.3008). This indicates that rather than reaching a compromise, the deliberation actually caused the agents' stances to polarize and span a wider volume of opinion space than when they started. 
+3. **Hypothesis Evaluation:** 
+   - **Convergence:** Treatment saw a very marginal increase in final stance similarity.
+   - **Self-Shift (Stubbornness):** Treatment agents were actually *more stubborn* (lower self-shift). The `<private_scratchpad>` may have served to anchor the agents in their own arguments rather than facilitating empathy.
+   - **Discourse Quality:** The DQI scores were nearly identical, though Treatment suffered a slight penalty in *Interactivity*. This suggests the internal reflection might have made the agents slightly more prone to parallel monologues.
 
-**Final Verdict**: We **retain the null hypothesis ($H_0$)** and reject the alternative hypothesis ($H_1$). The required internal reflection step did not increase consensus; in fact, the data suggests it may have entrenched opinions and reduced interactivity.
+**Final Verdict:** We **retain the null hypothesis ($H_0$)**. Requiring an internal reflection step did not meaningfully improve willingness to compromise or discourse quality, and in fact, slightly increased agent stubbornness.
 
