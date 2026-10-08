@@ -38,8 +38,9 @@ The repository is structured to be fully configurable and modular:
 ```text
 simple-simulation-school-closure/
 ├── data/
+│   ├── config.json           # General dir-level configuration which should be edited before a run and will be copied over after
 │   └── exp000/              # Indexed directory for experiment artifacts (auto-increments)
-│       ├── config.json       # Master configuration specific to this run (models, prompts, params)
+│       ├── config.json       # Master configuration specific to this run (copied from data/config.json)
 │       ├── results_control.json    # Auto-generated transcript and stances for Control
 │       ├── results_treatment.json  # Auto-generated transcript and stances for Treatment
 │       ├── results_control_transcript.pdf    # PDF export of the Control transcript (generated post-run)
@@ -59,9 +60,9 @@ simple-simulation-school-closure/
     └── test_sanity.py    # Unit tests for the private scratchpad regex parser
 ```
 
-## 5. Configuration (`data/<uid>/config.json`)
-
-The entire experiment is parameterized in `config.json`. This allows for easy swapping of models, personas, and metrics without altering the source code. Each experiment run has its own configuration file.
+## 5. Configuration (`data/config.json`)
+    
+The entire experiment is parameterized in `data/config.json`. This allows for easy swapping of models, personas, and metrics without altering the source code. Each experiment run has its own configuration file copied to its respective directory.
 
 **Key Config Sections:**
 

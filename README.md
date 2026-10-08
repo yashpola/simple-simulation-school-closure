@@ -7,7 +7,7 @@ This repository contains an automated experiment pipeline to test how internal r
 
 ## Project Structure
 
-- `data/<uid>/config.json`: Master configuration specific to the experiment run. Fully parameterized and grouped into `model_config`, `system_prompts`, `user_prompts`, and `deliberation_config`.
+- `data/config.json`: Master configuration for the experiment run. Fully parameterized and grouped into `model_config`, `system_prompts`, `user_prompts`, and `deliberation_config`.
 - `docs/`: Contains an agentic-focused experiment design document & coding guidelines as well as a human-written experiment details document.
 - `src/main.py`: The entry point script that orchestrates the pipeline.
 - `src/deliberation.py`: Handles the core simulation engine, LLM API calls, and multi-agent chat orchestration.
