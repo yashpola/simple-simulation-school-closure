@@ -42,6 +42,8 @@ simple-simulation-school-closure/
 │       ├── config.json       # Master configuration specific to this run (models, prompts, params)
 │       ├── results_control.json    # Auto-generated transcript and stances for Control
 │       ├── results_treatment.json  # Auto-generated transcript and stances for Treatment
+│       ├── results_control_transcript.pdf    # PDF export of the Control transcript (generated post-run)
+│       ├── results_treatment_transcript.pdf  # PDF export of the Treatment transcript (generated post-run)
 │       ├── evals.json        # Compiled evaluation metrics (Cosine, CovD, DQI)
 │       └── final_report.md   # Synthesized markdown report of the experiment results
 ├── docs/
@@ -79,7 +81,7 @@ The entire experiment is parameterized in `config.json`. This allows for easy sw
 
 ## 7. Final Reporting
 
-After running the experiment pipeline (`./run.sh`), the terminal will output the Cosine, CovD, and DQI metrics. An autonomous agent or human researcher should manually synthesize these terminal outputs into a formal markdown artifact located at `data/<uid>/final_report.md`.
+After running the experiment pipeline (`./run.sh`), the terminal will output the Cosine, CovD, and DQI metrics. An autonomous agent or human researcher should manually synthesize these terminal outputs into a formal markdown artifact located at `data/<uid>/final_report.md`. Additionally, PDF transcripts of the chat histories (`results_control_transcript.pdf` and `results_treatment_transcript.pdf`) should be generated for both Control and Treatment runs to facilitate reading.
 
 A properly generated `final_report.md` should include:
 
