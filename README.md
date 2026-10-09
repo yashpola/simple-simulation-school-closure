@@ -81,6 +81,19 @@ Essentially, the pipeline abides by this contract:
 >
 > **THEN** the pipeline will run an $N$-turn deliberation between 2 agents using the config-specified model(s) for both the Control & Treatment, and output the turn-based chat histories of each run in separate `json` files. The pipeline will also output an `evals.json` with the config-specificied metrics. All outputs will be saved in an automatically created & indexed sub-directory of `data`.
 
+## Default Configurations & Fallbacks
+
+If certain parameters are omitted from your `data/config.json`, the pipeline will safely fall back to the following hardcoded defaults:
+
+- **`agent_temperature`**: `0.7` (Used for generating both the pre/post stances and the conversational turns)
+- **`judge_temperature`**: `0.1` (Used for the LLM-as-a-judge DQI evaluation to ensure deterministic scoring)
+- **`max_turns_per_agent`**: `1` (Limits the deliberation loop to 1 turn if unspecified)
+- **`extract_tags`**: `false` (Disables regex parsing of the `<private_scratchpad>` by default)
+- **Embedding Model**: `all-MiniLM-L6-v2` (Hardcoded for Cosine Similarity and CovD metrics)
+- **DQI Judge Model**: `meta-llama/Llama-3.3-70B-Instruct-Turbo` (Fallback if the `DQI_Judge` key is missing from model assignments)
+
+Additionally, any omitted prompt strings (`topic_prompt`, `turn_prompt`, etc.) will default to empty strings, except for the `dqi_judge_prompt` which has a basic fallback instruction. If the DQI Judge fails to format its JSON properly for a turn, that turn's missing dimensional scores will default to `0.0`.
+
 ## Extra Notes
 
 The script does NOT programmatically generate:
