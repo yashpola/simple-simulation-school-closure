@@ -67,8 +67,8 @@ The entire experiment is parameterized in `data/config.json`. This allows for ea
 **Key Config Sections:**
 
 - `model_config`: Contains `model_assignments` (mapping personas to specific LLM endpoints) and `model_parameters` (temperatures, context window).
-- `system_prompts`: Contains all hardcoded string templates abstracted from the codebase (`topic_prompt`, `pre_stance_prompt`, `post_stance_prompt`, `dqi_judge_prompt`).
-- `user_prompts`: Defines the agent `personas` (ID, Role, description for the 2 agent personas) and the `turn_prompt`.
+- `system_prompts`: Contains all system-level string templates and definitions (`topic_prompt`, `pre_stance_prompt`, `post_stance_prompt`, `dqi_judge_prompt`, and agent `personas` descriptions).
+- `user_prompts`: Defines user-level turn prompts (`turn_prompt`).
 - `deliberation_config`: Configures the simulation mechanics (`max_turns_per_agent`), the `runs` (Control/Treatment definitions), and `eval_metrics`.
 
 ## 6. Execution Flow

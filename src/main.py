@@ -48,7 +48,7 @@ def main() -> None:
 
     # Apply model assignments to personas
     model_assignments = config.get("model_config", {}).get("model_assignments", {})
-    personas = config.get("user_prompts", {}).get("personas", [])
+    personas = config.get("system_prompts", {}).get("personas") or config.get("user_prompts", {}).get("personas", [])
     for p in personas:
         if p["id"] in model_assignments:
             p["model"] = model_assignments[p["id"]]

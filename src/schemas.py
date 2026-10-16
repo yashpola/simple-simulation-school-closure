@@ -25,6 +25,7 @@ class SystemPromptsConfig(TypedDict, total=False):
     pre_stance_prompt: str
     post_stance_prompt: str
     dqi_judge_prompt: str
+    personas: List[Persona]
 
 class UserPromptsConfig(TypedDict, total=False):
     personas: List[Persona]

@@ -70,7 +70,8 @@ def generate_initial_stances(
     topic_prompt = config.get("system_prompts", {}).get("topic_prompt", "")
     
     pre_stance_prompt = config.get("system_prompts", {}).get("pre_stance_prompt", "")
-    for p in config.get("user_prompts", {}).get("personas", []):
+    personas = config.get("system_prompts", {}).get("personas") or config.get("user_prompts", {}).get("personas", [])
+    for p in personas:
         sys_prompt = f"{p.get('description', '')}\n\n{pre_stance_prompt}\n{topic_prompt}"
         stance = generate_llm_response(
             client,
@@ -99,7 +100,7 @@ def conduct_deliberation(
     topic_prompt = config.get("system_prompts", {}).get("topic_prompt", "")
     turn_prompt = config.get("user_prompts", {}).get("turn_prompt", "")
     max_turns = config.get("deliberation_config", {}).get("max_turns_per_agent", 1)
-    personas = config.get("user_prompts", {}).get("personas", [])
+    personas = config.get("system_prompts", {}).get("personas") or config.get("user_prompts", {}).get("personas", [])
 
     for round_num in range(max_turns):
         print(f"\n--- Round {round_num + 1} ---")
@@ -170,7 +171,8 @@ def generate_final_stances(
     topic_prompt = config.get("system_prompts", {}).get("topic_prompt", "")
     
     post_stance_prompt = config.get("system_prompts", {}).get("post_stance_prompt", "")
-    for p in config.get("user_prompts", {}).get("personas", []):
+    personas = config.get("system_prompts", {}).get("personas") or config.get("user_prompts", {}).get("personas", [])
+    for p in personas:
         sys_prompt = f"{p.get('description', '')}\n\nTopic: {topic_prompt}\n{post_stance_prompt}"
 
         messages = []
