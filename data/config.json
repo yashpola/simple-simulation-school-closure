@@ -33,6 +33,7 @@
     "turn_prompt": "It is your turn to speak. Provide your response."
   },
   "deliberation_config": {
+    "total_trials": 1,
     "max_turns_per_agent": 3,
     "runs": [
       {
@@ -46,10 +47,6 @@
         "extract_tags": true
       }
     ],
-    "eval_metrics": [
-      "cosine_similarity",
-      "covd",
-      "dqi"
-    ]
+    "eval_metrics": ["cosine_similarity", "covd", "dqi"]
   }
 }

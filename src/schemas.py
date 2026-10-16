@@ -32,6 +32,7 @@ class UserPromptsConfig(TypedDict, total=False):
     turn_prompt: str
 
 class DeliberationConfigSchema(TypedDict, total=False):
+    total_trials: int
     max_turns_per_agent: int
     runs: List[RunConfig]
     eval_metrics: List[str]

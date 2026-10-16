@@ -85,6 +85,7 @@ Essentially, the pipeline abides by this contract:
 
 If certain parameters are omitted from your `data/config.json`, the pipeline will safely fall back to the following hardcoded defaults:
 
+- **`total_trials`**: `1` (Runs a single trial by default if omitted from deliberation_config)
 - **`agent_temperature`**: `0.7` (Used for generating both the pre/post stances and the conversational turns)
 - **`judge_temperature`**: `0.1` (Used for the LLM-as-a-judge DQI evaluation to ensure deterministic scoring)
 - **`max_turns_per_agent`**: `1` (Limits the deliberation loop to 1 turn if unspecified)
