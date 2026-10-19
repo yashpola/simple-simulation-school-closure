@@ -2,8 +2,8 @@ import json
 import numpy as np
 from openai import OpenAI
 from sentence_transformers import SentenceTransformer
-from typing import List, Dict, Optional, Tuple
-from schemas import ExperimentConfig, ChatEntry, ExperimentResult, DQIScores
+from typing import List, Dict, Optional, Tuple, Any
+from schemas import ExperimentConfig, ChatEntry, ExperimentResult, DQIScores, extract_seed
 
 # Load embedding model globally to avoid reloading
 print("Loading embedding model...")
@@ -72,6 +72,7 @@ def evaluate_dqi_for_chat_history(
     judge_model: str,
     judge_prompt: str,
     judge_temperature: float = 0.1,
+    seed: Optional[int] = None,
 ) -> DQIScores:
     """
     Evaluate the overall Discourse Quality Index (DQI) using an LLM-as-a-Judge for a turn-by-turn evaluation.
@@ -103,14 +104,17 @@ def evaluate_dqi_for_chat_history(
             prompt_content += f"Evaluate THIS specific turn:\n{current_turn}\n\nProvide the JSON evaluation:"
 
             try:
-                response = client.chat.completions.create(
-                    model=judge_model,
-                    messages=[
+                kwargs: Dict[str, Any] = {
+                    "model": judge_model,
+                    "messages": [
                         {"role": "system", "content": judge_prompt},
                         {"role": "user", "content": prompt_content},
                     ],
-                    temperature=judge_temperature,
-                )
+                    "temperature": judge_temperature,
+                }
+                if seed is not None:
+                    kwargs["seed"] = seed
+                response = client.chat.completions.create(**kwargs)
 
                 content = response.choices[0].message.content or ""
                 content = content.strip()
@@ -246,11 +250,13 @@ def compare_and_evaluate_simulation_runs(
     if "dqi" in eval_metrics:
         judge_model = config.get("model_config", {}).get("model_assignments", {}).get("DQI_Judge", "meta-llama/Llama-3.3-70B-Instruct-Turbo")
         judge_prompt = config.get("system_prompts", {}).get("dqi_judge_prompt", "You are an expert DQI evaluator...")
-        judge_temp = config.get("model_config", {}).get("model_parameters", {}).get("judge_temperature", 0.1)
+        model_params = config.get("model_config", {}).get("model_parameters", {})
+        judge_temp = model_params.get("judge_temperature", 0.1)
+        seed = extract_seed(model_params)
         
         print("\nCalculating DQI with LLM Judge...")
-        dqi_A = evaluate_dqi_for_chat_history(client, results_A["chat_history"], judge_model, judge_prompt, judge_temp)
-        dqi_B = evaluate_dqi_for_chat_history(client, results_B["chat_history"], judge_model, judge_prompt, judge_temp)
+        dqi_A = evaluate_dqi_for_chat_history(client, results_A["chat_history"], judge_model, judge_prompt, judge_temp, seed=seed)
+        dqi_B = evaluate_dqi_for_chat_history(client, results_B["chat_history"], judge_model, judge_prompt, judge_temp, seed=seed)
 
         print(f"\nDQI Results:")
         print_dqi_results("Control", dqi_A)

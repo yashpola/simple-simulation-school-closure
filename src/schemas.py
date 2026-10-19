@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional, TypedDict
+from typing import List, Dict, Optional, TypedDict, Any, Union
 
 class Persona(TypedDict, total=False):
     id: str
@@ -10,6 +10,26 @@ class ModelParameters(TypedDict, total=False):
     agent_temperature: float
     judge_temperature: float
     context_window: int
+    seed: Optional[Union[int, str]]
+
+def extract_seed(model_parameters: Dict[str, Any]) -> Optional[int]:
+    """
+    Extract and parse the random seed from model_parameters.
+    Supports integer values, None, or string representations like 'None' or 'null'.
+    """
+    raw_seed = model_parameters.get("seed")
+    if raw_seed is None:
+        return None
+    if isinstance(raw_seed, str):
+        if raw_seed.strip().lower() in ("none", "null", ""):
+            return None
+        try:
+            return int(raw_seed.strip())
+        except ValueError:
+            return None
+    if isinstance(raw_seed, int):
+        return raw_seed
+    return None
 
 class RunConfig(TypedDict, total=False):
     id: str

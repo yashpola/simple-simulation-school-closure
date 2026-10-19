@@ -1,7 +1,7 @@
 import re
 from openai import OpenAI
-from typing import List, Dict, Optional, Tuple
-from schemas import RunConfig, ExperimentConfig, ChatEntry, ExperimentResult
+from typing import List, Dict, Optional, Tuple, Any
+from schemas import RunConfig, ExperimentConfig, ChatEntry, ExperimentResult, extract_seed
 
 def generate_llm_response(
     client: OpenAI,
@@ -9,16 +9,20 @@ def generate_llm_response(
     model: str,
     system_prompt: str,
     temperature: float = 0.7,
+    seed: Optional[int] = None,
 ) -> str:
     """
     Call the LLM API to generate a response given a message history and system prompt.
     """
     try:
-        completion = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "system", "content": system_prompt}] + messages,
-            temperature=temperature,
-        )
+        kwargs: Dict[str, Any] = {
+            "model": model,
+            "messages": [{"role": "system", "content": system_prompt}] + messages,
+            "temperature": temperature,
+        }
+        if seed is not None:
+            kwargs["seed"] = seed
+        completion = client.chat.completions.create(**kwargs)
         return completion.choices[0].message.content or ""
     except Exception as e:
         print(f"Error calling model {model}: {e}")
@@ -61,6 +65,7 @@ def generate_initial_stances(
     client: OpenAI,
     config: ExperimentConfig,
     agent_temperature: float,
+    seed: Optional[int] = None,
 ) -> Dict[str, str]:
     """
     Prompt each persona to generate their initial 1-paragraph stance on the topic before any deliberation occurs.
@@ -79,6 +84,7 @@ def generate_initial_stances(
             p.get("model", ""),
             sys_prompt,
             temperature=agent_temperature,
+            seed=seed,
         )
         stances_pre[p["id"]] = stance
         print(f"  ✓ {p['id']} ({p.get('role', '')}) Pre-stance generated.")
@@ -91,6 +97,7 @@ def conduct_deliberation(
     run_config: RunConfig,
     config: ExperimentConfig,
     agent_temperature: float,
+    seed: Optional[int] = None,
 ) -> Dict[str, List[ChatEntry]]:
     """
     Execute the multi-turn deliberation chat among personas based on the configuration and prompt settings.
@@ -132,7 +139,7 @@ def conduct_deliberation(
             )
 
             raw_response = generate_llm_response(
-                client, messages, p.get("model", ""), sys_prompt, temperature=agent_temperature
+                client, messages, p.get("model", ""), sys_prompt, temperature=agent_temperature, seed=seed
             )
 
             scratchpad: Optional[str] = None
@@ -162,6 +169,7 @@ def generate_final_stances(
     config: ExperimentConfig,
     chat_history: Dict[str, List[ChatEntry]],
     agent_temperature: float,
+    seed: Optional[int] = None,
 ) -> Dict[str, str]:
     """
     Prompt each persona to generate their final 1-paragraph stance after reflecting on the complete deliberation.
@@ -192,7 +200,7 @@ def generate_final_stances(
         )
 
         stance = generate_llm_response(
-            client, messages, p.get("model", ""), sys_prompt, temperature=agent_temperature
+            client, messages, p.get("model", ""), sys_prompt, temperature=agent_temperature, seed=seed
         )
         stances_post[p["id"]] = stance
         print(f"  ✓ {p['id']} ({p.get('role', '')}) Post-stance generated.")
@@ -201,7 +209,11 @@ def generate_final_stances(
 
 
 def execute_simulation_run(
-    client: OpenAI, run_config: RunConfig, config: ExperimentConfig, stances_pre: Dict[str, str]
+    client: OpenAI,
+    run_config: RunConfig,
+    config: ExperimentConfig,
+    stances_pre: Dict[str, str],
+    seed: Optional[int] = None,
 ) -> ExperimentResult:
     """
     Orchestrate a single simulation run, gathering initial stances, conducting deliberation, and collecting final stances.
@@ -210,10 +222,13 @@ def execute_simulation_run(
     print(f"--- Starting {run_config.get('id', 'Unknown Run')} ---")
     print(f"{'='*40}")
 
-    agent_temp = config.get("model_config", {}).get("model_parameters", {}).get("agent_temperature", 0.7)
+    model_params = config.get("model_config", {}).get("model_parameters", {})
+    agent_temp = model_params.get("agent_temperature", 0.7)
+    if seed is None:
+        seed = extract_seed(model_params)
 
-    chat_history = conduct_deliberation(client, run_config, config, agent_temp)
-    stances_post = generate_final_stances(client, config, chat_history, agent_temp)
+    chat_history = conduct_deliberation(client, run_config, config, agent_temp, seed=seed)
+    stances_post = generate_final_stances(client, config, chat_history, agent_temp, seed=seed)
 
     return {
         "stances_pre": stances_pre,

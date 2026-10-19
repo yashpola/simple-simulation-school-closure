@@ -8,7 +8,7 @@ from deliberation import execute_simulation_run, generate_initial_stances
 from evaluation import compare_and_evaluate_simulation_runs
 
 from typing import cast
-from schemas import ExperimentConfig, RunConfig, ExperimentResult
+from schemas import ExperimentConfig, RunConfig, ExperimentResult, extract_seed
 
 
 def main() -> None:
@@ -72,11 +72,13 @@ def main() -> None:
 
         print("Starting experiment pipeline...")
         # Generate identical baseline stances once
-        agent_temp = config.get("model_config", {}).get("model_parameters", {}).get("agent_temperature", 0.7)
-        shared_stances_pre = generate_initial_stances(client, config, agent_temp)
+        model_params = config.get("model_config", {}).get("model_parameters", {})
+        agent_temp = model_params.get("agent_temperature", 0.7)
+        seed = extract_seed(model_params)
+        shared_stances_pre = generate_initial_stances(client, config, agent_temp, seed=seed)
         
-        res_A: ExperimentResult = execute_simulation_run(client, config_A, config, shared_stances_pre)
-        res_B: ExperimentResult = execute_simulation_run(client, config_B, config, shared_stances_pre)
+        res_A: ExperimentResult = execute_simulation_run(client, config_A, config, shared_stances_pre, seed=seed)
+        res_B: ExperimentResult = execute_simulation_run(client, config_B, config, shared_stances_pre, seed=seed)
 
         # Determine output directory
         config_dir = os.path.dirname(config_path)
