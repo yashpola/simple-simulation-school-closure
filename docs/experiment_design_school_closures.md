@@ -61,12 +61,12 @@ simple-simulation-school-closure/
 ```
 
 ## 5. Configuration (`data/config.json`)
-    
+
 The entire experiment is parameterized in `data/config.json`. This allows for easy swapping of models, personas, and metrics without altering the source code. Each experiment run has its own configuration file copied to its respective directory.
 
 **Key Config Sections:**
 
-- `model_config`: Contains `model_assignments` (mapping personas to specific LLM endpoints) and `model_parameters` (temperatures, context window).
+- `model_config`: Contains `model_assignments` (mapping personas to specific LLM endpoints) and `model_parameters` (temperatures, context window, and an optional random `seed` parameter).
 - `system_prompts`: Contains all system-level string templates and definitions (`topic_prompt`, `pre_stance_prompt`, `post_stance_prompt`, `dqi_judge_prompt`, and agent `personas` descriptions).
 - `user_prompts`: Defines user-level turn prompts (`turn_prompt`).
 - `deliberation_config`: Configures the simulation mechanics (`total_trials`, `max_turns_per_agent`), the `runs` (Control/Treatment definitions), and `eval_metrics`.

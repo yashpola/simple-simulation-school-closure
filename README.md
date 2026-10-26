@@ -12,7 +12,7 @@ This repository contains an automated experiment pipeline to test how internal r
 - `src/main.py`: The entry point script that orchestrates the pipeline.
 - `src/deliberation.py`: Handles the core simulation engine, LLM API calls, and multi-agent chat orchestration.
 - `src/evaluation.py`: Handles post-run mathematical calculations (Cosine, CovD) and the LLM-as-a-Judge DQI evaluations.
-- `src/schemas.py`: Contains strict Python type definitions (`TypedDict`) mapping to the configuration structure.
+- `src/schemas.py`: Contains strict Python type definitions (`TypedDict`) mapping to the configuration structure and helper utilities (e.g., `extract_seed`).
 - `tests/`: Unit tests and API readiness checks.
 
 ## Setup
