@@ -61,7 +61,7 @@ simple-simulation-school-closure/
 ```
 
 ## 5. Configuration (`data/config.json`)
-
+    
 The entire experiment is parameterized in `data/config.json`. This allows for easy swapping of models, personas, and metrics without altering the source code. Each experiment run has its own configuration file copied to its respective directory.
 
 **Key Config Sections:**
