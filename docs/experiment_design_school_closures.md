@@ -71,6 +71,10 @@ The entire experiment is parameterized in `data/config.json`. This allows for ea
 - `user_prompts`: Defines user-level turn prompts (`turn_prompt`).
 - `deliberation_config`: Configures the simulation mechanics (`total_trials`, `max_turns_per_agent`), the `runs` (Control/Treatment definitions), and `eval_metrics`.
 
+**Configuration Hygiene & Default Fallbacks:**
+
+For maintainability and future hygiene, any default configurations or fallback settings embedded within the codebase (e.g., hardcoded fallback values for temperatures, random seed behavior, turn limits, model defaults, or fallback prompt strings used when parameters are omitted from `data/config.json`) must be explicitly documented in `README.md` under **Default Configurations & Fallbacks**. Any addition or change to in-code default values must be mirrored in the README concurrently.
+
 ## 6. Execution Flow
 
 1. **Initialization (`src/main.py`)**: Loads `config.json` and environmental variables (API keys).
