@@ -35,3 +35,7 @@ This repository follows strict structural and typing paradigms designed for clar
 - All experiment run outputs (e.g., transcripts, stances, evaluations, and final reports) and the configuration file (`config.json`) must be saved into a dynamically indexed sub-directory inside `data/`.
 - The directory must use the `expXXX` string format (e.g., `data/exp000/`, `data/exp001/`).
 - The orchestrator (`src/main.py`) must auto-detect existing directories and increment the UID to prevent overwriting past experiment runs.
+
+## 7. Documentation Transparency for Code Defaults
+- All default parameters, fallback chains, and implicit values hardcoded within Python logic (e.g., fallback temperatures, seed defaults, turn limits, model fallbacks, or empty prompt strings) must be explicitly documented in the root `README.md` under **Built-in Code Defaults & Fallback Reference**.
+- Any addition or modification to code-level defaults must be mirrored in the README reference table concurrently.

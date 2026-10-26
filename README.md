@@ -81,20 +81,26 @@ Essentially, the pipeline abides by this contract:
 >
 > **THEN** the pipeline will run an $N$-turn deliberation between 2 agents using the config-specified model(s) for both the Control & Treatment, and output the turn-based chat histories of each run in separate `json` files. The pipeline will also output an `evals.json` with the config-specificied metrics. All outputs will be saved in an automatically created & indexed sub-directory of `data`.
 
-## Default Configurations & Fallbacks
+## 7. Built-in Code Defaults & Fallback Reference
 
-If certain parameters are omitted from your `data/config.json`, the pipeline will safely fall back to the following hardcoded defaults:
+All default parameters, fallback chains, and optimization bounds hardcoded within Python logic are documented below:
 
-- **`total_trials`**: `1` (Runs a single trial by default if omitted from deliberation_config)
-- **`agent_temperature`**: `0.7` (Used for generating both the pre/post stances and the conversational turns)
-- **`judge_temperature`**: `0.1` (Used for the LLM-as-a-judge DQI evaluation to ensure deterministic scoring)
-- **`seed`**: `None` / `null` (Leaves seed unset for default non-deterministic sampling unless an integer is specified)
-- **`max_turns_per_agent`**: `1` (Limits the deliberation loop to 1 turn if unspecified)
-- **`extract_tags`**: `false` (Disables regex parsing of the `<private_scratchpad>` by default)
-- **Embedding Model**: `all-MiniLM-L6-v2` (Hardcoded for Cosine Similarity and CovD metrics)
-- **DQI Judge Model**: `meta-llama/Llama-3.3-70B-Instruct-Turbo` (Fallback if the `DQI_Judge` key is missing from model assignments)
-
-Additionally, any omitted prompt strings (`topic_prompt`, `turn_prompt`, etc.) will default to empty strings, except for the `dqi_judge_prompt` which has a basic fallback instruction. If the DQI Judge fails to format its JSON properly for a turn, that turn's missing dimensional scores will default to `0.0`.
+| Module / Scope                                      | Parameter                           | Code Default / Fallback                     | Behavior & Purpose                                                                                                                                                                                           |
+| :-------------------------------------------------- | :---------------------------------- | :------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **API Credentials** (`src/main.py`)                 | `OPENAI_API_KEY`, `OPENAI_BASE_URL` | Read from `.env` (**no fallback**)          | Strictly loaded via `dotenv`. Base URL defaults to OpenAI official endpoint if omitted. Fails fast with API connection error if key is invalid.                                                              |
+| **Simulation Matrix** (`src/main.py`)               | `total_trials`                      | `1`                                         | Read from `deliberation_config.total_trials`. Executes a single paired trial if omitted. When $>1$, sequentially executes $N$ independent trials with distinct random sampling.                              |
+| **Output Directory** (`src/main.py`)                | `output_dir`                        | `data/expXXX/`                              | Auto-detects highest existing `expXXX` directory in `data/` and increments to the next index (starts at `data/exp000/`) to prevent overwriting past runs.                                                    |
+| **Dialogue Turns** (`src/deliberation.py`)          | `agent_temperature`                 | `0.7`                                       | Read from `model_parameters.agent_temperature`. Balanced exploratory sampling for baseline stance generation, multi-turn chat, and final stances.                                                            |
+| **Turn Budget** (`src/deliberation.py`)             | `max_turns_per_agent`               | `1`                                         | Read from `deliberation_config.max_turns_per_agent`. Limits conversational turns per persona to 1 round (2 total turns) if omitted.                                                                          |
+| **Random Seed** (`src/schemas.py`)                  | `seed`                              | `None` / `"None"`                           | Read from `model_parameters.seed`. Parsed via `extract_seed()`. If omitted, `null`, or `"None"`, leaves seed unset for default non-deterministic stochastic sampling; accepts integer for reproducible runs. |
+| **Scratchpad Parsing** (`src/deliberation.py`)      | `extract_tags`                      | `false`                                     | Boolean flag in run config. When `false`, treats raw model output as public response. When `true`, isolates `<private_scratchpad>` thoughts from `<public_response>`.                                        |
+| **Tag Extraction Fallback** (`src/deliberation.py`) | Missing `<public_response>`         | `text.replace(scratchpad, "").strip()`      | If model generates `<private_scratchpad>` but omits `<public_response>` tags, strips scratchpad block and defensively treats the remaining text as public response.                                          |
+| **Prompt Abstraction** (`src/deliberation.py`)      | System / User Prompts               | `""` (empty string)                         | `topic_prompt`, `pre_stance_prompt`, `post_stance_prompt`, and `turn_prompt` default to empty strings if omitted, forcing pipeline to rely on external configuration.                                        |
+| **DQI Judge Model** (`src/evaluation.py`)           | `DQI_Judge`                         | `"meta-llama/Llama-3.3-70B-Instruct-Turbo"` | Read from `model_assignments.DQI_Judge`. Defaults to Llama-3.3-70B if missing from configuration.                                                                                                            |
+| **DQI Judge Temperature** (`src/evaluation.py`)     | `judge_temperature`                 | `0.1`                                       | Read from `model_parameters.judge_temperature`. Low temperature ensures deterministic, reproducible scoring across the 5 DQI rubric dimensions.                                                              |
+| **Judge Prompt Fallback** (`src/evaluation.py`)     | `dqi_judge_prompt`                  | `"You are an expert DQI evaluator..."`      | Fallback prompt instruction for LLM judge if `dqi_judge_prompt` is omitted from `system_prompts`.                                                                                                            |
+| **Judge Output Parsing** (`src/evaluation.py`)      | Missing / Invalid JSON              | `0.0` per missing dimension                 | Strips markdown code blocks. If JSON parsing fails or rubric dimensions are omitted, defaults missing turn scores to `0.0` to prevent crashes.                                                               |
+| **Semantic Metrics** (`src/evaluation.py`)          | Embedding Checkpoint                | `"all-MiniLM-L6-v2"`                        | Globally loaded local SentenceTransformer model (384 dimensions, normalized) for Cosine Similarity (Convergence, Self-Shift) and Gram matrix determinant (CovD).                                             |
 
 ## Extra Notes
 
