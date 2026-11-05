@@ -11,6 +11,8 @@ class ModelParameters(TypedDict, total=False):
     judge_temperature: float
     context_window: int
     seed: Optional[Union[int, str]]
+    max_tokens: Optional[int]
+    reasoning_level: Optional[str]
 
 def extract_seed(model_parameters: Dict[str, Any]) -> Optional[int]:
     """

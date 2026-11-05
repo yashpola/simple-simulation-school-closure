@@ -6,6 +6,7 @@ import {
   generatePostStances,
   evaluateDQI,
   calculateAnalyticalMetrics,
+  categorizeSimulationError,
 } from '@/lib/simulation';
 import { ExperimentConfig, ExperimentRun, ExperimentResult } from '@/types/experiment';
 import { createClient } from '@supabase/supabase-js';
@@ -39,8 +40,16 @@ export async function POST(req: NextRequest) {
     if (!effectiveApiKey) {
       return NextResponse.json(
         {
-          error:
-            'No LLM API Key provided. Set OPENAI_API_KEY in website/.env or provide it in the experiment runner settings.',
+          error: {
+            title: 'Missing LLM API Key',
+            reason: 'No API key was provided for the simulation runner.',
+            solution: 'Click "Set API Key" in the top navigation bar to configure your Together AI or OpenAI API key.',
+            category: 'auth',
+            stage: 'Pre-flight Validation',
+            raw: 'No LLM API Key provided.',
+            status: 400,
+            timestamp: new Date().toLocaleTimeString(),
+          },
         },
         { status: 400 }
       );
@@ -59,7 +68,9 @@ export async function POST(req: NextRequest) {
 
     // Run experiment asynchronously
     (async () => {
+      let currentStage = 'Initializing Simulation';
       try {
+        currentStage = 'Generating Baseline Pre-Deliberation Stances';
         await sendEvent({ status: 'started', stage: 'pre_stances', message: 'Generating baseline pre-deliberation stances...' });
 
         // 1. Pre-stances
@@ -68,6 +79,7 @@ export async function POST(req: NextRequest) {
         });
 
         // 2. Control Run
+        currentStage = 'Executing Control Deliberation (Direct Dialogue)';
         await sendEvent({ status: 'running', stage: 'control_run', message: 'Executing Control Run (Direct Deliberation)...' });
         const runAConfig = config.deliberation_config.runs[0] || {
           id: 'run_A_control',
@@ -84,6 +96,7 @@ export async function POST(req: NextRequest) {
         });
 
         // 3. Treatment Run
+        currentStage = 'Executing Treatment Deliberation (Internal Reflection Scratchpad)';
         await sendEvent({ status: 'running', stage: 'treatment_run', message: 'Executing Treatment Run (With Internal Reflection)...' });
         const runBConfig = config.deliberation_config.runs[1] || {
           id: 'run_B_treatment',
@@ -101,6 +114,7 @@ export async function POST(req: NextRequest) {
         });
 
         // 4. Post-stances
+        currentStage = 'Generating Final Post-Deliberation Stances';
         await sendEvent({ status: 'running', stage: 'post_stances', message: 'Generating final post-deliberation stances...' });
         const stancesPostControl = await generatePostStances(client, config, chatHistoryControl, (msg) => {
           sendEvent({ stage: 'post_stances', message: `Control: ${msg}` });
@@ -122,6 +136,7 @@ export async function POST(req: NextRequest) {
         };
 
         // 5. Evaluation
+        currentStage = 'Evaluating Consensus & DQI Judge Rubric';
         await sendEvent({
           status: 'running',
           stage: 'evaluation',
@@ -158,6 +173,7 @@ export async function POST(req: NextRequest) {
           },
         };
 
+        currentStage = 'Packaging Run Artifacts & Database Persistence';
         await sendEvent({
           status: 'running',
           stage: 'saving',
@@ -207,8 +223,9 @@ export async function POST(req: NextRequest) {
 
         await sendEvent({ status: 'completed', stage: 'completed', message: 'Experiment completed successfully!', run: experimentRun });
       } catch (err: any) {
-        console.error('Experiment runner error:', err);
-        await sendEvent({ status: 'error', stage: 'error', error: err?.message || 'Unknown simulation error.' });
+        const diagnostic = categorizeSimulationError(err, currentStage);
+        console.error('Experiment runner error:', diagnostic);
+        await sendEvent({ status: 'error', stage: 'error', error: diagnostic });
       } finally {
         await writer.close();
       }

@@ -5,11 +5,15 @@ export interface Persona {
   model?: string;
 }
 
+export type ReasoningLevel = 'auto' | 'off' | 'low' | 'medium' | 'high';
+
 export interface ModelParameters {
   agent_temperature: number;
   judge_temperature: number;
   context_window: number;
   seed: string | number | null;
+  max_tokens?: number;
+  reasoning_level?: ReasoningLevel;
 }
 
 export interface RunConfig {

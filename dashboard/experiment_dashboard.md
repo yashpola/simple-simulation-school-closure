@@ -267,6 +267,16 @@ export async function POST(req: NextRequest) {
 }
 ```
 
+### Heterogeneous Model Reasoning & Smart Adapter Pattern
+
+Different LLM providers and architectures treat reasoning tokens and parameter schemas fundamentally differently:
+- **Standard Non-Reasoning Models (Llama 3/3.1/3.3, Mistral, Gemma, Phi):** Sending `reasoning`, `reasoning_effort`, or `thinking` causes an HTTP 400 Bad Request (`extra_fields_not_permitted`). Reasoning parameters must be omitted entirely.
+- **OpenAI Reasoning Models (o1, o3, o3-mini):** Accept `reasoning_effort: "low" | "medium" | "high"` and require `max_completion_tokens` instead of `max_tokens`. (Also reject custom temperature parameters).
+- **Qwen Models (Qwen 2.5, QwQ):** Expect a boolean toggle: `reasoning: { enabled: boolean }`.
+- **DeepSeek & Thinking Models (DeepSeek R1, Muse, GPT-OSS):** Accept `reasoning_effort` and token budgets: `thinking: { type: "enabled", budget_tokens: N }` or `thinking: { type: "disabled" }`.
+
+**Architecture Rule:** Never leak provider differences into UI forms or force users to write raw JSON. Instead, expose a normalized universal enum (`auto | off | low | medium | high`) in the configuration, and use a lightweight adapter helper in `callLLM` to map payloads dynamically based on `model.toLowerCase()`.
+
 ---
 
 ## 7. Experiment Resources & Open Science Integration

@@ -10,18 +10,52 @@ def generate_llm_response(
     system_prompt: str,
     temperature: float = 0.7,
     seed: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    reasoning_level: Optional[str] = None,
 ) -> str:
     """
     Call the LLM API to generate a response given a message history and system prompt.
+    Adapts parameters across heterogeneous model families (Llama vs Qwen vs DeepSeek vs OpenAI o-series).
     """
     try:
+        m = (model or "").lower()
+        is_llama_or_standard = any(k in m for k in ("llama", "mistral", "mixtral", "gemma", "phi"))
+        is_qwen = "qwen" in m or "qwq" in m
+        is_openai_o = m.startswith("o1") or m.startswith("o3") or "/o1" in m or "/o3" in m
+        is_deepseek = "deepseek" in m or "r1" in m or "reasoning" in m or "muse" in m
+
         kwargs: Dict[str, Any] = {
             "model": model,
             "messages": [{"role": "system", "content": system_prompt}] + messages,
-            "temperature": temperature,
         }
+        if not is_openai_o:
+            kwargs["temperature"] = temperature
         if seed is not None:
             kwargs["seed"] = seed
+        if max_tokens and max_tokens > 0:
+            if is_openai_o:
+                kwargs["max_completion_tokens"] = max_tokens
+            else:
+                kwargs["max_tokens"] = max_tokens
+
+        # Cross-model reasoning level adapter
+        if reasoning_level and reasoning_level.lower() != "auto":
+            rl = reasoning_level.lower()
+            if is_llama_or_standard:
+                pass  # Omit reasoning parameters to avoid HTTP 400 Bad Request
+            elif is_openai_o:
+                if rl != "off":
+                    kwargs["reasoning_effort"] = rl
+            elif is_qwen:
+                kwargs["reasoning"] = {"enabled": rl != "off"}
+            elif is_deepseek:
+                if rl == "off":
+                    kwargs["thinking"] = {"type": "disabled"}
+                else:
+                    kwargs["reasoning_effort"] = rl
+                    budget_map = {"low": 1024, "medium": 2048, "high": 4096}
+                    kwargs["thinking"] = {"type": "enabled", "budget_tokens": budget_map.get(rl, 2048)}
+
         completion = client.chat.completions.create(**kwargs)
         return completion.choices[0].message.content or ""
     except Exception as e:
@@ -66,6 +100,8 @@ def generate_initial_stances(
     config: ExperimentConfig,
     agent_temperature: float,
     seed: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    reasoning_level: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Prompt each persona to generate their initial 1-paragraph stance on the topic before any deliberation occurs.
@@ -85,6 +121,8 @@ def generate_initial_stances(
             sys_prompt,
             temperature=agent_temperature,
             seed=seed,
+            max_tokens=max_tokens,
+            reasoning_level=reasoning_level,
         )
         stances_pre[p["id"]] = stance
         print(f"  ✓ {p['id']} ({p.get('role', '')}) Pre-stance generated.")
@@ -98,6 +136,8 @@ def conduct_deliberation(
     config: ExperimentConfig,
     agent_temperature: float,
     seed: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    reasoning_level: Optional[str] = None,
 ) -> Dict[str, List[ChatEntry]]:
     """
     Execute the multi-turn deliberation chat among personas based on the configuration and prompt settings.
@@ -139,7 +179,14 @@ def conduct_deliberation(
             )
 
             raw_response = generate_llm_response(
-                client, messages, p.get("model", ""), sys_prompt, temperature=agent_temperature, seed=seed
+                client,
+                messages,
+                p.get("model", ""),
+                sys_prompt,
+                temperature=agent_temperature,
+                seed=seed,
+                max_tokens=max_tokens,
+                reasoning_level=reasoning_level,
             )
 
             scratchpad: Optional[str] = None
@@ -170,6 +217,8 @@ def generate_final_stances(
     chat_history: Dict[str, List[ChatEntry]],
     agent_temperature: float,
     seed: Optional[int] = None,
+    max_tokens: Optional[int] = None,
+    reasoning_level: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Prompt each persona to generate their final 1-paragraph stance after reflecting on the complete deliberation.
@@ -200,7 +249,14 @@ def generate_final_stances(
         )
 
         stance = generate_llm_response(
-            client, messages, p.get("model", ""), sys_prompt, temperature=agent_temperature, seed=seed
+            client,
+            messages,
+            p.get("model", ""),
+            sys_prompt,
+            temperature=agent_temperature,
+            seed=seed,
+            max_tokens=max_tokens,
+            reasoning_level=reasoning_level,
         )
         stances_post[p["id"]] = stance
         print(f"  ✓ {p['id']} ({p.get('role', '')}) Post-stance generated.")
@@ -224,11 +280,29 @@ def execute_simulation_run(
 
     model_params = config.get("model_config", {}).get("model_parameters", {})
     agent_temp = model_params.get("agent_temperature", 0.7)
+    max_tokens = model_params.get("max_tokens", 2048)
+    reasoning_level = model_params.get("reasoning_level", "auto")
     if seed is None:
         seed = extract_seed(model_params)
 
-    chat_history = conduct_deliberation(client, run_config, config, agent_temp, seed=seed)
-    stances_post = generate_final_stances(client, config, chat_history, agent_temp, seed=seed)
+    chat_history = conduct_deliberation(
+        client,
+        run_config,
+        config,
+        agent_temp,
+        seed=seed,
+        max_tokens=max_tokens,
+        reasoning_level=reasoning_level,
+    )
+    stances_post = generate_final_stances(
+        client,
+        config,
+        chat_history,
+        agent_temp,
+        seed=seed,
+        max_tokens=max_tokens,
+        reasoning_level=reasoning_level,
+    )
 
     return {
         "stances_pre": stances_pre,

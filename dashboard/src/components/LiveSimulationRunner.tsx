@@ -1,17 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ExperimentConfig, ExperimentRun } from '@/types/experiment';
+import { DiagnosticError, categorizeSimulationError } from '@/lib/simulation';
 import { ApiSettings } from './ApiSettingsModal';
 import {
   X,
   Play,
   CheckCircle2,
   AlertTriangle,
+  AlertCircle,
   Loader2,
   Brain,
   MessageSquare,
   Sparkles,
   ArrowRight,
-  HelpCircle
+  HelpCircle,
+  RotateCcw,
+  Key,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 interface LiveSimulationRunnerProps {
@@ -21,6 +27,7 @@ interface LiveSimulationRunnerProps {
   onClose: () => void;
   onRunFinished: (newRun: ExperimentRun) => void;
   apiSettings: ApiSettings;
+  onOpenApiSettings?: () => void;
 }
 
 export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
@@ -30,6 +37,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
   onClose,
   onRunFinished,
   apiSettings,
+  onOpenApiSettings,
 }) => {
   const [status, setStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
   const [stage, setStage] = useState<string>('Initializing...');
@@ -38,9 +46,17 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
   const [liveTurns, setLiveTurns] = useState<Array<{ run: string; round: number; entry: any }>>([]);
   const [completedRun, setCompletedRun] = useState<ExperimentRun | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<DiagnosticError | null>(null);
+  const [copiedDiagnostic, setCopiedDiagnostic] = useState<boolean>(false);
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  const copyErrorDiagnostics = (details: DiagnosticError) => {
+    navigator.clipboard.writeText(JSON.stringify(details, null, 2));
+    setCopiedDiagnostic(true);
+    setTimeout(() => setCopiedDiagnostic(false), 2000);
+  };
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -73,6 +89,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
     setLiveTurns([]);
     setCompletedRun(null);
     setErrorMessage(null);
+    setErrorDetails(null);
     setPercent(5);
     setStage('Connecting to deliberation runner...');
 
@@ -91,7 +108,17 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
 
       if (!response.ok) {
         const errJson = await response.json();
-        throw new Error(errJson.error || 'Failed to start experiment.');
+        const details =
+          typeof errJson.error === 'object' && errJson.error !== null
+            ? (errJson.error as DiagnosticError)
+            : categorizeSimulationError(
+                errJson.error || 'Failed to start experiment.',
+                'Pre-flight Validation',
+              );
+        setErrorDetails(details);
+        setErrorMessage(details.reason || details.raw);
+        setStatus('error');
+        return;
       }
 
       const reader = response.body?.getReader();
@@ -150,7 +177,15 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
 
               if (data.status === 'error') {
                 setStatus('error');
-                setErrorMessage(data.error || 'Simulation encountered an error.');
+                const details =
+                  typeof data.error === 'object' && data.error !== null
+                    ? (data.error as DiagnosticError)
+                    : categorizeSimulationError(
+                        data.error || 'Simulation encountered an error.',
+                        stage,
+                      );
+                setErrorDetails(details);
+                setErrorMessage(details.reason || details.raw);
               }
             } catch (err) {
               // ignore parse errors for partial chunks
@@ -160,7 +195,12 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
       }
     } catch (err: any) {
       setStatus('error');
-      setErrorMessage(err?.message || 'Network error running simulation.');
+      const details = categorizeSimulationError(
+        err?.message || 'Network error running simulation.',
+        stage,
+      );
+      setErrorDetails(details);
+      setErrorMessage(details.reason || details.raw);
     }
   };
 
@@ -293,18 +333,104 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
           )}
 
           {status === 'error' && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-800 space-y-2">
-              <div className="flex items-center gap-2 font-bold">
-                <AlertTriangle className="h-4 w-4" />
-                <span>Simulation Failed</span>
+            <div className="rounded-2xl border border-red-200 bg-red-50/70 p-5 shadow-xs space-y-4 animate-in fade-in zoom-in-98 duration-150">
+              {/* Error Header */}
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div className="flex items-start gap-3.5">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-100 border border-red-200 text-red-700 shrink-0 shadow-2xs">
+                    <AlertCircle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-red-200/80 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-red-900">
+                        Execution Halted
+                      </span>
+                      {errorDetails?.timestamp && (
+                        <span className="font-mono text-xs text-red-700">
+                          at {errorDetails.timestamp}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-base font-bold text-red-950">
+                      {errorDetails?.title || 'Simulation Encountered an Error'}
+                    </h4>
+                  </div>
+                </div>
+
+                <span className="rounded-lg border border-red-200 bg-white px-2.5 py-1 font-mono text-[11px] font-semibold text-red-800 shrink-0 self-start">
+                  Stage: {errorDetails?.stage || stage}
+                </span>
               </div>
-              <p>{errorMessage}</p>
-              <button
-                onClick={startSimulation}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3 py-1.5 font-semibold text-red-800 shadow-2xs hover:bg-red-50"
-              >
-                <span>Retry</span>
-              </button>
+
+              {/* What Happened (Explanation) */}
+              <div className="rounded-xl bg-white border border-red-200/90 p-4 shadow-2xs space-y-1.5">
+                <div className="text-[11px] font-bold font-mono uppercase tracking-wider text-red-800 flex items-center gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+                  <span>What Happened</span>
+                </div>
+                <p className="text-xs text-neutral-800 leading-relaxed font-sans font-medium">
+                  {errorDetails?.reason || errorMessage || 'An unexpected error halted the deliberation process.'}
+                </p>
+              </div>
+
+              {/* Suggested Solution / Recommended Action */}
+              <div className="rounded-xl bg-amber-50/90 border border-amber-200 p-4 shadow-2xs space-y-1.5">
+                <div className="text-[11px] font-bold font-mono uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-700" />
+                  <span>Recommended Action</span>
+                </div>
+                <p className="text-xs text-amber-950 leading-relaxed font-sans">
+                  {errorDetails?.solution || 'Review the technical diagnostics below, verify your parameters in Experiment Setup, and retry.'}
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={startSimulation}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-red-700 transition-colors"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Retry Simulation</span>
+                </button>
+
+                {onOpenApiSettings && (errorDetails?.category === 'auth' || errorDetails?.category === 'rate_limit' || errorDetails?.category === 'network') && (
+                  <button
+                    type="button"
+                    onClick={onOpenApiSettings}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold text-neutral-800 shadow-2xs hover:bg-neutral-50 transition-colors"
+                  >
+                    <Key className="h-3.5 w-3.5 text-neutral-600" />
+                    <span>Update API Key / Settings</span>
+                  </button>
+                )}
+
+                {errorDetails && (
+                  <button
+                    type="button"
+                    onClick={() => copyErrorDiagnostics(errorDetails)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs font-medium text-neutral-700 shadow-2xs hover:bg-neutral-50 transition-colors sm:ml-auto"
+                  >
+                    {copiedDiagnostic ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5 text-neutral-500" />}
+                    <span>{copiedDiagnostic ? 'Copied' : 'Copy Diagnostics'}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Collapsible Technical Details */}
+              <details className="rounded-xl border border-red-200 bg-white p-3 text-xs group">
+                <summary className="font-mono text-[11px] font-semibold text-neutral-600 cursor-pointer select-none hover:text-neutral-900 flex items-center justify-between">
+                  <span>Technical Diagnostics & Stack</span>
+                  <span className="text-[10px] text-neutral-400 group-open:hidden">Click to expand</span>
+                </summary>
+                <div className="mt-2.5 pt-2 border-t border-neutral-100 font-mono text-[11px] text-neutral-700 space-y-1 overflow-x-auto">
+                  <div><strong>Error String:</strong> {errorDetails?.raw || errorMessage}</div>
+                  {errorDetails?.status && <div><strong>Status Code:</strong> {errorDetails.status}</div>}
+                  <div><strong>Target Run:</strong> {targetExpId}</div>
+                  <div><strong>Model Assignment:</strong> {config.model_config.model_assignments['MOE Official'] || 'Llama-3.3-70B'}</div>
+                </div>
+              </details>
             </div>
           )}
 

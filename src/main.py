@@ -74,8 +74,17 @@ def main() -> None:
         # Generate identical baseline stances once
         model_params = config.get("model_config", {}).get("model_parameters", {})
         agent_temp = model_params.get("agent_temperature", 0.7)
+        max_tokens = model_params.get("max_tokens", 2048)
+        reasoning_level = model_params.get("reasoning_level", "auto")
         seed = extract_seed(model_params)
-        shared_stances_pre = generate_initial_stances(client, config, agent_temp, seed=seed)
+        shared_stances_pre = generate_initial_stances(
+            client,
+            config,
+            agent_temp,
+            seed=seed,
+            max_tokens=max_tokens,
+            reasoning_level=reasoning_level,
+        )
         
         res_A: ExperimentResult = execute_simulation_run(client, config_A, config, shared_stances_pre, seed=seed)
         res_B: ExperimentResult = execute_simulation_run(client, config_B, config, shared_stances_pre, seed=seed)

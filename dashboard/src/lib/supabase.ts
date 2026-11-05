@@ -23,6 +23,37 @@ export const getSupabaseClient = (): SupabaseClient | null => {
 
 const LOCAL_STORAGE_KEY = 'simulation_experiments_runs';
 
+/**
+ * Retroactively backfills missing config fields (e.g. max_tokens, reasoning_level)
+ * on experiment runs loaded from database or local cache.
+ */
+export const ensureConfigBackfill = (run: ExperimentRun): ExperimentRun => {
+  if (!run?.config?.model_config?.model_parameters) return run;
+  const params = run.config.model_config.model_parameters;
+  let changed = false;
+  const newParams = { ...params };
+  if (newParams.max_tokens === undefined || newParams.max_tokens === null) {
+    newParams.max_tokens = 2048;
+    changed = true;
+  }
+  if (!newParams.reasoning_level) {
+    newParams.reasoning_level = 'auto';
+    changed = true;
+  }
+  if (!changed) return run;
+
+  return {
+    ...run,
+    config: {
+      ...run.config,
+      model_config: {
+        ...run.config.model_config,
+        model_parameters: newParams,
+      },
+    },
+  };
+};
+
 // Helper to access localStorage safely in Next.js SSR
 const getLocalRuns = (): ExperimentRun[] => {
   if (typeof window === 'undefined') return [SAMPLE_EXP000];
@@ -33,7 +64,10 @@ const getLocalRuns = (): ExperimentRun[] => {
       return [SAMPLE_EXP000];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [SAMPLE_EXP000];
+    const runs = Array.isArray(parsed) && parsed.length > 0 ? parsed : [SAMPLE_EXP000];
+    const backfilled = runs.map(ensureConfigBackfill);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(backfilled));
+    return backfilled;
   } catch (err) {
     console.error('Failed to read from localStorage', err);
     return [SAMPLE_EXP000];
@@ -96,7 +130,8 @@ export async function getExperimentRuns(): Promise<{
       return { runs: getLocalRuns(), source: 'local' };
     }
 
-    return { runs: data as ExperimentRun[], source: 'supabase' };
+    const backfilled = (data as ExperimentRun[]).map(ensureConfigBackfill);
+    return { runs: backfilled, source: 'supabase' };
   } catch (err: any) {
     console.warn('Supabase network error, falling back to local:', err);
     return {
@@ -119,14 +154,15 @@ export async function getExperimentRunById(id: string): Promise<ExperimentRun | 
         .select('*')
         .eq('id', id)
         .single();
-      if (!error && data) return data as ExperimentRun;
+      if (!error && data) return ensureConfigBackfill(data as ExperimentRun);
     } catch {
       // ignore and fallback
     }
   }
 
   const local = getLocalRuns();
-  return local.find((r) => r.id === id) || null;
+  const run = local.find((r) => r.id === id) || null;
+  return run ? ensureConfigBackfill(run) : null;
 }
 
 /**
@@ -137,8 +173,9 @@ export async function saveExperimentRun(run: ExperimentRun): Promise<{
   source: 'supabase' | 'local';
   error?: string;
 }> {
+  const preparedRun = ensureConfigBackfill(run);
   // Always update local cache for instant UI feedback
-  saveLocalRun(run);
+  saveLocalRun(preparedRun);
 
   const client = getSupabaseClient();
   if (!client) {
@@ -147,16 +184,16 @@ export async function saveExperimentRun(run: ExperimentRun): Promise<{
 
   try {
     const { error } = await client.from(EXPERIMENT_TABLE).upsert({
-      id: run.id,
-      created_at: run.created_at,
-      name: run.name,
-      description: run.description || '',
-      status: run.status,
-      config: run.config,
-      results_control: run.results_control,
-      results_treatment: run.results_treatment,
-      evals: run.evals,
-      metadata: run.metadata || {}
+      id: preparedRun.id,
+      created_at: preparedRun.created_at,
+      name: preparedRun.name,
+      description: preparedRun.description || '',
+      status: preparedRun.status,
+      config: preparedRun.config,
+      results_control: preparedRun.results_control,
+      results_treatment: preparedRun.results_treatment,
+      evals: preparedRun.evals,
+      metadata: preparedRun.metadata || {}
     });
 
     if (error) {

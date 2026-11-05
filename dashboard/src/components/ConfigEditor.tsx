@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ExperimentConfig,
   Persona,
+  ReasoningLevel,
 } from '@/types/experiment';
 import { DEFAULT_CONFIG } from '@/lib/sampleData';
 import { ApiSettings, PROVIDER_PRESETS } from './ApiSettingsModal';
@@ -520,6 +521,75 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
               <p className="text-xs text-neutral-500 mt-1">
                 Low temperature ensures reproducible, consistent scoring across the DQI rubric.
               </p>
+            </div>
+
+            {/* Max Output Tokens */}
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-neutral-800">
+                  Max Tokens (Generation Limit):
+                </label>
+                <div className="flex gap-1">
+                  {[1024, 2048, 4096].map((tok) => (
+                    <button
+                      key={tok}
+                      type="button"
+                      onClick={() => updateModelParams('max_tokens', tok)}
+                      className={`px-2 py-0.5 text-[11px] font-mono rounded border transition-colors ${
+                        config.model_config.model_parameters.max_tokens === tok
+                          ? 'border-neutral-900 bg-neutral-900 text-white font-bold'
+                          : 'border-neutral-300 bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
+                      }`}
+                    >
+                      {tok}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <input
+                type="number"
+                min={256}
+                max={16384}
+                step={256}
+                value={config.model_config.model_parameters.max_tokens ?? 2048}
+                onChange={(e) => updateModelParams('max_tokens', parseInt(e.target.value, 10) || 2048)}
+                className="w-full mt-1.5 rounded-lg border border-neutral-300 px-3.5 py-2 text-sm font-mono shadow-2xs"
+              />
+              <p className="text-xs text-neutral-500 mt-1">
+                Upper token generation limit per stance and conversational turn. Automatically mapped to <code className="font-mono text-[11px] bg-neutral-100 px-1 py-0.5 rounded text-neutral-800">max_completion_tokens</code> for OpenAI o-series models.
+              </p>
+            </div>
+
+            {/* Reasoning Level with Cross-Model Smart Adapter Explanation */}
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-neutral-800">
+                  Reasoning Level:
+                </label>
+                <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-mono font-bold text-amber-900 border border-amber-200">
+                  <Brain className="h-2.5 w-2.5" />
+                  Smart Model Adapter
+                </span>
+              </div>
+              <select
+                value={config.model_config.model_parameters.reasoning_level ?? 'auto'}
+                onChange={(e) => updateModelParams('reasoning_level', e.target.value as ReasoningLevel)}
+                className="w-full mt-1.5 rounded-lg border border-neutral-300 bg-white px-3.5 py-2 text-sm font-sans font-medium text-neutral-900 shadow-2xs"
+              >
+                <option value="auto">Auto / Model Default (Recommended)</option>
+                <option value="off">Off (Disable native thinking tokens / fast)</option>
+                <option value="low">Low (Fast, ~1,000 thinking tokens / brief reflection)</option>
+                <option value="medium">Medium (Balanced, ~2,000 thinking tokens)</option>
+                <option value="high">High (Deep, ~4,000 thinking tokens / maximum exploration)</option>
+              </select>
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-2.5 text-xs text-neutral-600 mt-2 space-y-1">
+                <p className="font-semibold text-neutral-800">Cross-Model Handling:</p>
+                <ul className="list-disc list-inside space-y-0.5 text-[11px] text-neutral-600">
+                  <li><strong>Qwen:</strong> Translated to <code className="font-mono text-neutral-800">reasoning: &#123; enabled &#125;</code> boolean switch.</li>
+                  <li><strong>DeepSeek / Muse / GPT-OSS:</strong> Configures thinking token budget & reasoning effort tier.</li>
+                  <li><strong>Llama 70B / Mistral:</strong> Safely omits reasoning parameters to avoid HTTP 400 errors.</li>
+                </ul>
+              </div>
             </div>
 
             <div>

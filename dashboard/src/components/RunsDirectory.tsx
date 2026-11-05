@@ -855,6 +855,14 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                                           <span className="font-mono font-bold text-neutral-900">{modelParams.judge_temperature ?? 0.1}</span>
                                         </div>
                                         <div className="py-2.5 flex items-center justify-between">
+                                          <span className="font-semibold text-neutral-700">Max Generation Tokens:</span>
+                                          <span className="font-mono font-bold text-neutral-900">{modelParams.max_tokens ? `${modelParams.max_tokens.toLocaleString()} tokens` : '2,048 tokens'}</span>
+                                        </div>
+                                        <div className="py-2.5 flex items-center justify-between">
+                                          <span className="font-semibold text-neutral-700">Reasoning Level:</span>
+                                          <span className="font-mono font-bold text-neutral-900 capitalize">{modelParams.reasoning_level || 'Auto'}</span>
+                                        </div>
+                                        <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">Random Seed:</span>
                                           <span className="font-mono font-bold text-neutral-900">{String(modelParams.seed ?? 'None')}</span>
                                         </div>

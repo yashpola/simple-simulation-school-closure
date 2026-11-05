@@ -11,7 +11,9 @@ export const DEFAULT_CONFIG: ExperimentConfig = {
       agent_temperature: 0.7,
       judge_temperature: 0.1,
       context_window: 128000,
-      seed: "None"
+      seed: "None",
+      max_tokens: 2048,
+      reasoning_level: "auto"
     }
   },
   system_prompts: {

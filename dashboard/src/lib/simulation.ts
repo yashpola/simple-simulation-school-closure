@@ -7,6 +7,7 @@ import {
   EvaluationResults,
   RunConfig,
   Persona,
+  ReasoningLevel,
 } from "@/types/experiment";
 
 export interface SimulationProgress {
@@ -27,6 +28,149 @@ export interface SimulationProgress {
     agent: string;
     public_response: string;
     private_scratchpad?: string | null;
+  };
+}
+
+export interface DiagnosticError {
+  title: string;
+  reason: string;
+  solution: string;
+  category: 'auth' | 'rate_limit' | 'model_not_found' | 'timeout' | 'network' | 'general';
+  stage: string;
+  raw: string;
+  status?: number;
+  timestamp: string;
+}
+
+export function categorizeSimulationError(
+  err: any,
+  stage: string = 'Simulation Setup',
+): DiagnosticError {
+  const message = String(err?.message || err || '');
+  const status = Number(err?.status || err?.statusCode || 0);
+  const lowerMsg = message.toLowerCase();
+
+  // 1. Missing or Invalid API Key
+  if (
+    status === 401 ||
+    lowerMsg.includes('401') ||
+    lowerMsg.includes('unauthorized') ||
+    lowerMsg.includes('invalid api key') ||
+    lowerMsg.includes('no llm api key provided') ||
+    lowerMsg.includes('incorrect api key')
+  ) {
+    return {
+      title: 'Authentication Rejected (401 Unauthorized)',
+      reason:
+        'The model provider rejected your API key. The key may be invalid, expired, or have incorrect permissions.',
+      solution:
+        'Open "API Settings" in the header to enter a valid Together AI or OpenAI API key. Check that no extra characters or quotes are copied.',
+      category: 'auth',
+      stage,
+      raw: message,
+      status: 401,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+  }
+
+  // 2. Rate Limit or Quota Exceeded
+  if (
+    status === 429 ||
+    lowerMsg.includes('429') ||
+    lowerMsg.includes('rate limit') ||
+    lowerMsg.includes('quota') ||
+    lowerMsg.includes('too many requests')
+  ) {
+    return {
+      title: 'Rate Limit or Quota Exceeded (429)',
+      reason:
+        'Your model provider account exceeded its requests-per-minute (RPM), tokens-per-minute (TPM), or account credits balance.',
+      solution:
+        'Wait 30–60 seconds before retrying. If the issue persists, check your provider account balance or switch to a different model in Experiment Setup.',
+      category: 'rate_limit',
+      stage,
+      raw: message,
+      status: 429,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+  }
+
+  // 3. Model Not Found
+  if (
+    status === 404 ||
+    lowerMsg.includes('404') ||
+    lowerMsg.includes('model_not_found') ||
+    lowerMsg.includes('does not exist') ||
+    lowerMsg.includes('no such model')
+  ) {
+    return {
+      title: 'Model Identifier Not Found (404)',
+      reason:
+        'The configured model name was not recognized or is not supported by your model provider endpoint.',
+      solution:
+        'Go to Experiment Setup → Model Assignments and select a supported model (such as meta-llama/Llama-3.3-70B-Instruct-Turbo on Together AI).',
+      category: 'model_not_found',
+      stage,
+      raw: message,
+      status: 404,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+  }
+
+  // 4. Timeout
+  if (
+    lowerMsg.includes('timed out') ||
+    lowerMsg.includes('timeout') ||
+    lowerMsg.includes('etimeout') ||
+    lowerMsg.includes('etimedout')
+  ) {
+    return {
+      title: 'Inference Request Timed Out (>25s)',
+      reason:
+        'A request to the LLM provider took longer than 25 seconds to generate tokens. The provider service may be experiencing high queue times or latency.',
+      solution:
+        'Click "Retry Simulation" to attempt the request again. If timeouts continue, check the status page of your LLM provider.',
+      category: 'timeout',
+      stage,
+      raw: message,
+      status: 504,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+  }
+
+  // 5. Network / Base URL Unreachable
+  if (
+    lowerMsg.includes('fetch failed') ||
+    lowerMsg.includes('econnrefused') ||
+    lowerMsg.includes('network') ||
+    lowerMsg.includes('enotfound')
+  ) {
+    return {
+      title: 'Network / Provider Endpoint Unreachable',
+      reason:
+        'Unable to establish an HTTP connection with your model provider Base URL.',
+      solution:
+        'Check your internet connection, or verify the Base URL in API Settings (default: https://api.together.xyz/v1). If using a local LLM (Ollama), ensure your local server is running.',
+      category: 'network',
+      stage,
+      raw: message,
+      status: 502,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+  }
+
+  // 6. Generic / Internal Error
+  return {
+    title: 'Simulation Execution Interrupted',
+    reason:
+      message || 'An unexpected runtime error halted the deliberation process.',
+    solution:
+      'Review the technical diagnostics below. You can retry the simulation or adjust your configuration in Experiment Setup.',
+    category: 'general',
+    stage,
+    raw: message,
+    status: status || 500,
+    timestamp: new Date().toLocaleTimeString(),
   };
 }
 
@@ -84,7 +228,100 @@ export function extractTags(text: string): {
 }
 
 /**
- * Helper to call LLM chat completion with temperature, optional seed, and timeout protection.
+ * Adapts chat completion payload across heterogeneous model architectures:
+ * - Llama / Mistral / Gemma / Phi: Standard models; omits reasoning parameters to avoid HTTP 400 Bad Request.
+ * - OpenAI o1 / o3: Maps reasoningLevel to reasoning_effort ('low' | 'medium' | 'high') and maxTokens to max_completion_tokens.
+ * - Qwen 2.5 / QwQ / Qwen 9B: Maps reasoningLevel to boolean switch { reasoning: { enabled: boolean } }.
+ * - DeepSeek R1 / V3 / Muse / GPT-OSS: Maps reasoningLevel to reasoning_effort and thinking budget tokens.
+ */
+export function adaptModelPayload(
+  model: string,
+  systemPrompt: string,
+  messages: Array<{ role: "user" | "assistant" | "system"; content: string }>,
+  temperature: number = 0.7,
+  seed?: number | null,
+  maxTokens?: number,
+  reasoningLevel?: ReasoningLevel,
+): any {
+  const m = (model || "").toLowerCase();
+  const isLlamaOrStandard =
+    m.includes("llama") ||
+    m.includes("mistral") ||
+    m.includes("mixtral") ||
+    m.includes("gemma") ||
+    m.includes("phi");
+  const isQwen = m.includes("qwen") || m.includes("qwq");
+  const isOpenAIO =
+    m.startsWith("o1") ||
+    m.startsWith("o3") ||
+    m.includes("/o1") ||
+    m.includes("/o3");
+  const isDeepSeekOrReasoning =
+    m.includes("deepseek") ||
+    m.includes("r1") ||
+    m.includes("reasoning") ||
+    m.includes("muse");
+
+  const payload: any = {
+    model: model || "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    messages: [{ role: "system", content: systemPrompt }, ...messages],
+  };
+
+  // Temperature: o1/o3 restrict custom temperature
+  if (!isOpenAIO) {
+    payload.temperature = temperature;
+  }
+
+  // Random seed
+  if (seed !== undefined && seed !== null) {
+    payload.seed = seed;
+  }
+
+  // Max Tokens
+  if (maxTokens && maxTokens > 0) {
+    if (isOpenAIO) {
+      payload.max_completion_tokens = maxTokens;
+    } else {
+      payload.max_tokens = maxTokens;
+    }
+  }
+
+  // Reasoning Level handling
+  if (reasoningLevel && reasoningLevel !== "auto") {
+    if (isLlamaOrStandard) {
+      // Standard models (Llama, Mistral, Gemma) reject reasoning parameters with HTTP 400.
+      // Omit all reasoning fields; cognitive reflection is handled via prompt conditioning.
+    } else if (isOpenAIO) {
+      if (reasoningLevel !== "off") {
+        payload.reasoning_effort = reasoningLevel;
+      }
+    } else if (isQwen) {
+      // Qwen accepts boolean toggle: reasoning: { enabled: boolean }
+      payload.reasoning = { enabled: reasoningLevel !== "off" };
+    } else if (isDeepSeekOrReasoning) {
+      // DeepSeek/Muse/GPT-OSS accept reasoning_effort or thinking token budget
+      if (reasoningLevel === "off") {
+        payload.thinking = { type: "disabled" };
+      } else {
+        payload.reasoning_effort = reasoningLevel;
+        const budgetMap: Record<string, number> = {
+          low: 1024,
+          medium: 2048,
+          high: 4096,
+        };
+        payload.thinking = {
+          type: "enabled",
+          budget_tokens: budgetMap[reasoningLevel] || 2048,
+        };
+      }
+    }
+  }
+
+  return payload;
+}
+
+/**
+ * Helper to call LLM chat completion with temperature, optional seed, token limits, and timeout protection.
  */
 async function callLLM(
   client: OpenAI,
@@ -94,16 +331,18 @@ async function callLLM(
   temperature: number = 0.7,
   seed?: number | null,
   timeoutMs: number = 25000,
+  maxTokens?: number,
+  reasoningLevel?: ReasoningLevel,
 ): Promise<string> {
-  const payload: any = {
-    model: model || "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-    messages: [{ role: "system", content: systemPrompt }, ...messages],
+  const payload = adaptModelPayload(
+    model,
+    systemPrompt,
+    messages,
     temperature,
-  };
-
-  if (seed !== undefined && seed !== null) {
-    payload.seed = seed;
-  }
+    seed,
+    maxTokens,
+    reasoningLevel,
+  );
 
   const completionPromise = client.chat.completions.create(payload);
   const timeoutPromise = new Promise<never>((_, reject) =>
@@ -132,6 +371,8 @@ export async function generatePreStances(
   const temp = config.model_config.model_parameters.agent_temperature ?? 0.7;
   const rawSeed = config.model_config.model_parameters.seed;
   const seed = typeof rawSeed === "number" ? rawSeed : null;
+  const maxTokens = config.model_config.model_parameters.max_tokens ?? 2048;
+  const reasoningLevel = config.model_config.model_parameters.reasoning_level ?? "auto";
 
   for (const p of personas) {
     onProgress?.(`Generating baseline pre-stance for ${p.id} (${p.role})...`);
@@ -148,6 +389,9 @@ export async function generatePreStances(
       [{ role: "user", content: "What is your stance?" }],
       temp,
       seed,
+      25000,
+      maxTokens,
+      reasoningLevel,
     );
 
     stances[p.id] = text.trim();
@@ -175,6 +419,8 @@ export async function conductDeliberation(
   const temp = config.model_config.model_parameters.agent_temperature ?? 0.7;
   const rawSeed = config.model_config.model_parameters.seed;
   const seed = typeof rawSeed === "number" ? rawSeed : null;
+  const maxTokens = config.model_config.model_parameters.max_tokens ?? 2048;
+  const reasoningLevel = config.model_config.model_parameters.reasoning_level ?? "auto";
 
   for (let r = 0; r < maxTurns; r++) {
     const turnKey = `turn_${r + 1}`;
@@ -209,7 +455,17 @@ export async function conductDeliberation(
 
       messages.push({ role: "user", content: turnPrompt });
 
-      const raw = await callLLM(client, model, sysPrompt, messages, temp, seed);
+      const raw = await callLLM(
+        client,
+        model,
+        sysPrompt,
+        messages,
+        temp,
+        seed,
+        25000,
+        maxTokens,
+        reasoningLevel,
+      );
 
       let scratchpad: string | null = null;
       let publicResp = raw;
@@ -255,6 +511,8 @@ export async function generatePostStances(
   const temp = config.model_config.model_parameters.agent_temperature ?? 0.7;
   const rawSeed = config.model_config.model_parameters.seed;
   const seed = typeof rawSeed === "number" ? rawSeed : null;
+  const maxTokens = config.model_config.model_parameters.max_tokens ?? 2048;
+  const reasoningLevel = config.model_config.model_parameters.reasoning_level ?? "auto";
 
   for (const p of personas) {
     onProgress?.(`Generating final post-stance for ${p.id}...`);
@@ -280,7 +538,17 @@ export async function generatePostStances(
         "Based on the discussion above, what is your final stance on the topic?",
     });
 
-    const text = await callLLM(client, model, sysPrompt, messages, temp, seed);
+    const text = await callLLM(
+      client,
+      model,
+      sysPrompt,
+      messages,
+      temp,
+      seed,
+      25000,
+      maxTokens,
+      reasoningLevel,
+    );
     stances[p.id] = text.trim();
   }
 
@@ -348,6 +616,8 @@ Do not output any markdown formatting, only the JSON object.`;
       temp,
       seed,
       25000, // 25-second timeout
+      1024,
+      "off",
     );
 
     let cleanJson = rawResponse.trim();

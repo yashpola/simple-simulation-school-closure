@@ -174,6 +174,7 @@ export default function DashboardPage() {
         onClose={() => setIsRunnerOpen(false)}
         onRunFinished={handleRunFinished}
         apiSettings={apiSettings}
+        onOpenApiSettings={() => setIsApiSettingsOpen(true)}
       />
 
       {/* API Key BYOK Settings Modal */}
