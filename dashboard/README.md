@@ -30,7 +30,7 @@ To protect your cloud compute budget and ensure users can safely run their own c
 - **Zero Disk Writes & Zero Logging**: The server never writes the key to file systems, temporary files, disk caches, or console logs.
 
 ### 3. What Gets Saved to Supabase?
-- **Strict Database Sanitization**: When a simulation completes, only the resulting conversational transcripts, stance shifts, and DQI scores are written to the `experiment_runs` table. All API keys, tokens, and authorization headers are strictly excluded and stripped before any Supabase write occurs.
+- **Strict Database Sanitization**: When a simulation completes, only the resulting conversational transcripts, stance shifts, and DQI scores are written to the `school_closure_experiments` table. All API keys, tokens, and authorization headers are strictly excluded and stripped before any Supabase write occurs.
 - **No Cross-User Leakage**: Other visitors viewing the public run history can inspect dialogue and metrics, but have **zero access** to your API keys.
 
 ### 4. Zero-Cloud / Offline Option (Local Models)
@@ -81,7 +81,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 3. Open or copy the contents of `dashboard/supabase/schema.sql` and click **Run**:
 
 ```sql
-CREATE TABLE IF NOT EXISTS experiment_runs (
+CREATE TABLE IF NOT EXISTS school_closure_experiments (
     id TEXT PRIMARY KEY,                 -- e.g. 'exp000', 'exp001'
     created_at TIMESTAMPTZ DEFAULT NOW(),
     name TEXT NOT NULL DEFAULT 'School Closure Deliberation',
@@ -95,11 +95,11 @@ CREATE TABLE IF NOT EXISTS experiment_runs (
     metadata JSONB DEFAULT '{}'::jsonb
 );
 
-ALTER TABLE experiment_runs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read on experiment_runs" ON experiment_runs FOR SELECT USING (true);
-CREATE POLICY "Allow public insert on experiment_runs" ON experiment_runs FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update on experiment_runs" ON experiment_runs FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete on experiment_runs" ON experiment_runs FOR DELETE USING (true);
+ALTER TABLE school_closure_experiments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read on school_closure_experiments" ON school_closure_experiments FOR SELECT USING (true);
+CREATE POLICY "Allow public insert on school_closure_experiments" ON school_closure_experiments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update on school_closure_experiments" ON school_closure_experiments FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete on school_closure_experiments" ON school_closure_experiments FOR DELETE USING (true);
 ```
 
 ---

@@ -5,6 +5,8 @@ import { SAMPLE_EXP000 } from './sampleData';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
+export const EXPERIMENT_TABLE = process.env.NEXT_PUBLIC_SUPABASE_TABLE || 'school_closure_experiments';
+
 export const isSupabaseConfigured = (): boolean => {
   return Boolean(
     supabaseUrl &&
@@ -76,7 +78,7 @@ export async function getExperimentRuns(): Promise<{
 
   try {
     const { data, error } = await client
-      .from('experiment_runs')
+      .from(EXPERIMENT_TABLE)
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -113,7 +115,7 @@ export async function getExperimentRunById(id: string): Promise<ExperimentRun | 
   if (client) {
     try {
       const { data, error } = await client
-        .from('experiment_runs')
+        .from(EXPERIMENT_TABLE)
         .select('*')
         .eq('id', id)
         .single();
@@ -144,7 +146,7 @@ export async function saveExperimentRun(run: ExperimentRun): Promise<{
   }
 
   try {
-    const { error } = await client.from('experiment_runs').upsert({
+    const { error } = await client.from(EXPERIMENT_TABLE).upsert({
       id: run.id,
       created_at: run.created_at,
       name: run.name,
@@ -184,7 +186,7 @@ export async function deleteExperimentRun(id: string): Promise<{ success: boolea
   const client = getSupabaseClient();
   if (client) {
     try {
-      await client.from('experiment_runs').delete().eq('id', id);
+      await client.from(EXPERIMENT_TABLE).delete().eq('id', id);
     } catch {
       // ignore
     }

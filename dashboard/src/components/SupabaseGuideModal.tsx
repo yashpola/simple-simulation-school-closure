@@ -26,8 +26,8 @@ export const SupabaseGuideModal: React.FC<SupabaseGuideModalProps> = ({
 
   if (!isOpen) return null;
 
-  const sqlScript = `-- Create table for Experiment Runs (Digital twin of local expXXX directories)
-CREATE TABLE IF NOT EXISTS experiment_runs (
+  const sqlScript = `-- Create table for School Closure Deliberation Experiments (Digital twin of local expXXX directories)
+CREATE TABLE IF NOT EXISTS school_closure_experiments (
     id TEXT PRIMARY KEY,                 -- e.g. 'exp000', 'exp001'
     created_at TIMESTAMPTZ DEFAULT NOW(),
     name TEXT NOT NULL DEFAULT 'School Closure Deliberation',
@@ -42,14 +42,15 @@ CREATE TABLE IF NOT EXISTS experiment_runs (
 );
 
 -- Enable RLS and public policies for anonymous read/write
-ALTER TABLE experiment_runs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read on experiment_runs" ON experiment_runs FOR SELECT USING (true);
-CREATE POLICY "Allow public insert on experiment_runs" ON experiment_runs FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update on experiment_runs" ON experiment_runs FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete on experiment_runs" ON experiment_runs FOR DELETE USING (true);`;
+ALTER TABLE school_closure_experiments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read on school_closure_experiments" ON school_closure_experiments FOR SELECT USING (true);
+CREATE POLICY "Allow public insert on school_closure_experiments" ON school_closure_experiments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update on school_closure_experiments" ON school_closure_experiments FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete on school_closure_experiments" ON school_closure_experiments FOR DELETE USING (true);`;
 
   const envSnippet = `NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+NEXT_PUBLIC_SUPABASE_TABLE=school_closure_experiments
 
 # LLM Compute Provider (Together AI or OpenAI)
 OPENAI_API_KEY=<your-api-key>

@@ -60,12 +60,13 @@ When designing a dashboard where public users or reviewers can trigger LLM runs,
      > *"Zero-Trust Architecture: Your API key is stored exclusively in your browser's local memory. It is sent ephemerally over HTTPS strictly to authenticate requests and is never written to disk, saved in Supabase, or exposed to third parties."*
    - Mask the input field with `type="password"` and provide a 1-click "Purge Key from Browser" button.
 
-4. **Database Row-Level Security (RLS)**:
+4. **Database Row-Level Security (RLS) & Multi-Study Table Isolation**:
    - When connecting Supabase or PostgreSQL:
-     - Enable RLS on the `experiment_runs` table.
+     - **Table-Isolation Architecture**: Avoid generic table names like `experiment_runs`. Instead, isolate data into topic-specific tables (e.g., `school_closure_experiments`, `healthcare_deliberation_experiments`, `legal_negotiation_experiments`) and allow dynamic configuration via `NEXT_PUBLIC_SUPABASE_TABLE || 'school_closure_experiments'`. This allows multiple independent experiment dashboards to share the same Supabase project cleanly without data collisions.
+     - Enable RLS on the study-specific table (`school_closure_experiments`).
      - Public anonymous users can `SELECT` runs.
      - Writes (`INSERT`) can be allowed for new runs or scoped via authenticated roles or anon keys without compromising read integrity.
-     - Never include credentials or sensitive environment variables in client-exposed bundles (`NEXT_PUBLIC_` should only expose Supabase URL and anonymous public keys).
+     - Never include credentials or sensitive environment variables in client-exposed bundles (`NEXT_PUBLIC_` should only expose Supabase URL, anonymous public keys, and the table identifier).
 
 ---
 

@@ -159,8 +159,9 @@ export async function POST(req: NextRequest) {
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
         if (supabaseUrl && supabaseKey && supabaseUrl.startsWith('http') && !supabaseUrl.includes('your-project-id')) {
           try {
+            const tableName = process.env.NEXT_PUBLIC_SUPABASE_TABLE || 'school_closure_experiments';
             const supabase = createClient(supabaseUrl, supabaseKey);
-            await supabase.from('experiment_runs').upsert({
+            await supabase.from(tableName).upsert({
               id: experimentRun.id,
               created_at: experimentRun.created_at,
               name: experimentRun.name,

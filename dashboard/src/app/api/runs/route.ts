@@ -4,6 +4,7 @@ import { ExperimentRun } from '@/types/experiment';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const EXPERIMENT_TABLE = process.env.NEXT_PUBLIC_SUPABASE_TABLE || 'school_closure_experiments';
 
 function getSupabase() {
   if (!supabaseUrl || !supabaseKey || !supabaseUrl.startsWith('http') || supabaseUrl.includes('your-project-id')) {
@@ -20,7 +21,7 @@ export async function GET() {
 
   try {
     const { data, error } = await supabase
-      .from('experiment_runs')
+      .from(EXPERIMENT_TABLE)
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = (await req.json()) as ExperimentRun;
-    const { error } = await supabase.from('experiment_runs').upsert({
+    const { error } = await supabase.from(EXPERIMENT_TABLE).upsert({
       id: body.id,
       created_at: body.created_at || new Date().toISOString(),
       name: body.name,

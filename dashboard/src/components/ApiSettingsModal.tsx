@@ -289,7 +289,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
                       4
                     </span>
                     <div>
-                      <strong className="text-neutral-900">Database Sanitization Filter:</strong> When the resulting dialogue and DQI metrics are saved to the Supabase <code className="bg-neutral-100 px-1 py-0.2 rounded font-mono text-[10px]">experiment_runs</code> table, the payload is explicitly stripped of all API keys and bearer tokens. Other visitors cannot access or view your credentials.
+                      <strong className="text-neutral-900">Database Sanitization Filter:</strong> When the resulting dialogue and DQI metrics are saved to the Supabase <code className="bg-neutral-100 px-1 py-0.2 rounded font-mono text-[10px]">school_closure_experiments</code> table, the payload is explicitly stripped of all API keys and bearer tokens. Other visitors cannot access or view your credentials.
                     </div>
                   </div>
 
