@@ -4,6 +4,13 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'School Closure Deliberation · Interactive Twin',
   description: 'Minimalistic interactive dashboard and digital twin for multi-agent deliberation simulation experiments',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({

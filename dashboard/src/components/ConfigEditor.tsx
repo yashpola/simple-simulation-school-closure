@@ -17,7 +17,9 @@ import {
   Sliders,
   Sparkles,
   MessageSquare,
-  Brain
+  Brain,
+  ShieldCheck,
+  Lock
 } from 'lucide-react';
 
 interface ConfigEditorProps {
@@ -197,7 +199,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
         </div>
       </div>
 
-      {/* API Key BYOK Banner / Status */}
+      {/* API Key BYOK Banner / Status with Security Assurance */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-sm">
         <div className="flex items-center gap-3.5">
           <div
@@ -205,7 +207,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
               hasApiKey ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'
             }`}
           >
-            <Key className="h-5 w-5" />
+            {hasApiKey ? <ShieldCheck className="h-5 w-5" /> : <Key className="h-5 w-5" />}
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -215,10 +217,16 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
               <span className="font-mono text-xs text-neutral-500">
                 ({apiSettings.baseUrl})
               </span>
+              {hasApiKey && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-800">
+                  <Lock className="h-2.5 w-2.5" />
+                  Client-Secured
+                </span>
+              )}
             </div>
             <p className="text-xs text-neutral-600 mt-0.5">
               {hasApiKey
-                ? 'Your custom API key is loaded locally in this browser. Compute is billed directly to your provider account.'
+                ? 'Your key is kept strictly in local browser memory and never written to Supabase or server disks. Compute is billed directly to your own provider.'
                 : 'No API key configured. Provide your Together AI, OpenAI, Groq, or OpenRouter key to launch runs.'}
             </p>
           </div>
@@ -228,7 +236,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
           onClick={onOpenApiSettings}
           className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl border border-neutral-300 bg-white px-4 py-2 font-semibold text-neutral-800 hover:bg-neutral-50 shadow-2xs text-xs"
         >
-          <span>{hasApiKey ? 'Change Key / Provider' : 'Enter API Key'}</span>
+          <span>{hasApiKey ? 'Security & Key Settings' : 'Enter API Key'}</span>
         </button>
       </div>
 

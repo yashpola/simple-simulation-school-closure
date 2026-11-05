@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, FolderGit2, Settings, Key } from 'lucide-react';
+import { Database, FolderGit2, Settings, Key, ShieldCheck } from 'lucide-react';
 import { ApiSettings } from './ApiSettingsModal';
 
 interface NavbarProps {
@@ -69,24 +69,28 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Status Pills (API Key BYOK + Supabase) */}
         <div className="flex items-center gap-2.5">
-          {/* BYOK API Key Pill */}
+          {/* BYOK API Key Pill with Security Assurance */}
           <button
             onClick={onOpenApiSettings}
             className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-mono font-medium border transition-colors ${
               hasApiKey
-                ? "border-neutral-300 bg-neutral-50 text-neutral-800 hover:bg-neutral-100"
+                ? "border-emerald-300/80 bg-emerald-50/70 text-emerald-900 hover:bg-emerald-100"
                 : "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
             }`}
-            title="Configure custom LLM API Key & Base URL"
+            title={
+              hasApiKey
+                ? "BYOK active · Key secured in local browser memory only · Click to manage"
+                : "Configure custom LLM API Key & Base URL"
+            }
           >
             <span
               className={`h-2 w-2 rounded-full ${
                 hasApiKey ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
               }`}
             />
-            <Key className="h-3.5 w-3.5" />
+            {hasApiKey ? <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" /> : <Key className="h-3.5 w-3.5" />}
             <span>
-              {hasApiKey ? `Key: ${apiSettings.provider}` : "Set API Key"}
+              {hasApiKey ? `Secured: ${apiSettings.provider}` : "Set API Key"}
             </span>
           </button>
 

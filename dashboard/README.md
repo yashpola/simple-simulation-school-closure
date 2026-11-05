@@ -15,21 +15,26 @@ This web application mirrors the exact local execution pipeline from `src/main.p
 
 ---
 
-## 🔒 Bring-Your-Own-Key (BYOK) Architecture
+## 🔒 Bring-Your-Own-Key (BYOK) Security & Privacy Architecture
 
-To prevent public visitors from draining your compute budget and to allow anyone to test their own models:
-- **No Server API Key Required**: You do **not** need to add an `OPENAI_API_KEY` to Vercel environment variables.
-- **Client-Side Key Management**: Users configure their API Key and Base URL using the **"Set API Key"** button in the dashboard navbar.
-- **Provider Presets**:
-  - **Together AI**: `https://api.together.xyz/v1` (Llama-3.3-70B, Mixtral, Qwen)
-  - **OpenAI**: `https://api.openai.com/v1` (GPT-4o, GPT-4o-mini)
-  - **OpenRouter**: `https://openrouter.ai/api/v1` (Claude, Llama, Gemini)
-  - **Groq**: `https://api.groq.com/openai/v1` (Llama-3.3-70b-versatile)
-  - **Local / Self-Hosted**: `http://localhost:11434/v1` (Ollama) or custom vLLM
-- **Zero-Leak Guarantee**:
-  - The API key is stored exclusively in the user's browser `localStorage` or `sessionStorage`.
-  - When saving experiments to Supabase, all API keys are strictly redacted.
-  - Other users viewing shared runs in the directory can inspect transcripts and evals, but can **never** see or access anyone else's API key.
+To protect your cloud compute budget and ensure users can safely run their own choice of LLMs (Together AI, OpenAI, Groq, OpenRouter, or local vLLM/Ollama), the dashboard implements a **zero-persistence, client-controlled credential model**:
+
+### 1. Where is the Key Stored?
+- **Client-Side Only**: Your API key lives entirely in your local browser storage (`sessionStorage` or `localStorage`).
+- **Session Purge Option**: Selecting *"This session only"* automatically purges the key from memory the instant you close the browser tab.
+- **One-Click Instant Erase**: Clicking *"Clear Key"* wipes the stored credential immediately from local browser storage.
+
+### 2. How is the Key Transmitted & Processed?
+- **TLS 1.3 Transport Encryption**: The key is transmitted exclusively over encrypted HTTPS directly to the `/api/run-experiment` endpoint inside the POST request body. It is **never** passed via URL query parameters, preventing exposure in browser history or reverse-proxy logs.
+- **Transient In-Memory Execution (RAM Only)**: The Next.js serverless execution runtime receives the key in-memory, instantiates the OpenAI-compatible client, streams the simulation dialogue turns, and immediately discards the reference upon stream termination.
+- **Zero Disk Writes & Zero Logging**: The server never writes the key to file systems, temporary files, disk caches, or console logs.
+
+### 3. What Gets Saved to Supabase?
+- **Strict Database Sanitization**: When a simulation completes, only the resulting conversational transcripts, stance shifts, and DQI scores are written to the `experiment_runs` table. All API keys, tokens, and authorization headers are strictly excluded and stripped before any Supabase write occurs.
+- **No Cross-User Leakage**: Other visitors viewing the public run history can inspect dialogue and metrics, but have **zero access** to your API keys.
+
+### 4. Zero-Cloud / Offline Option (Local Models)
+- If you prefer total data sovereignty with no external API calls, select the **Custom / Local** preset and enter `http://localhost:11434/v1` (for Ollama, vLLM, or LMStudio). You can use any arbitrary placeholder text as the API key, keeping 100% of data and compute entirely on your machine.
 
 ---
 
