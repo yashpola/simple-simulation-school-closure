@@ -137,8 +137,6 @@ export default function DashboardPage() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        supabaseConnected={supabaseConnected}
-        onOpenSetup={() => setIsSetupOpen(true)}
         apiSettings={apiSettings}
         onOpenApiSettings={() => setIsApiSettingsOpen(true)}
       />

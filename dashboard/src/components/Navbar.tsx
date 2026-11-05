@@ -1,12 +1,10 @@
 import React from 'react';
-import { Database, FolderGit2, Settings, Key, ShieldCheck, BookOpen } from 'lucide-react';
+import { FolderGit2, Settings, Key, ShieldCheck, BookOpen } from 'lucide-react';
 import { ApiSettings } from './ApiSettingsModal';
 
 interface NavbarProps {
   activeTab: 'directory' | 'config' | 'resources';
   setActiveTab: (tab: 'directory' | 'config' | 'resources') => void;
-  supabaseConnected: boolean;
-  onOpenSetup: () => void;
   apiSettings: ApiSettings;
   onOpenApiSettings: () => void;
 }
@@ -14,8 +12,6 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
-  supabaseConnected,
-  onOpenSetup,
   apiSettings,
   onOpenApiSettings,
 }) => {
@@ -77,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </nav>
 
-        {/* Status Pills (API Key BYOK + Supabase) */}
+        {/* Status Pill (API Key BYOK) */}
         <div className="flex items-center gap-2.5">
           {/* BYOK API Key Pill with Security Assurance */}
           <button
@@ -104,25 +100,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Key className="h-3.5 w-3.5" />
             )}
             <span>{hasApiKey ? `Secured: ${apiSettings.provider}` : 'Set API Key'}</span>
-          </button>
-
-          {/* Supabase Status Pill */}
-          <button
-            onClick={onOpenSetup}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-mono font-medium border transition-colors ${
-              supabaseConnected
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                : 'border-neutral-300 bg-neutral-50 text-neutral-600 hover:bg-neutral-100'
-            }`}
-            title="Supabase Database Status"
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${
-                supabaseConnected ? 'bg-emerald-500' : 'bg-neutral-400'
-              }`}
-            />
-            <Database className="h-3.5 w-3.5" />
-            <span>{supabaseConnected ? 'Supabase' : 'Local DB'}</span>
           </button>
         </div>
       </div>
