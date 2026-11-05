@@ -130,7 +130,11 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
                 else if (data.stage === 'control_run') setPercent(45);
                 else if (data.stage === 'treatment_run') setPercent(70);
                 else if (data.stage === 'post_stances') setPercent(85);
-                else if (data.stage === 'evaluation') setPercent(95);
+                else if (data.stage === 'evaluation') {
+                  setPercent((prev) => Math.min(97, Math.max(92, prev + 2)));
+                } else if (data.stage === 'saving') {
+                  setPercent(99);
+                }
               }
 
               if (data.turn) {

@@ -102,8 +102,12 @@ export async function POST(req: NextRequest) {
 
         // 4. Post-stances
         await sendEvent({ status: 'running', stage: 'post_stances', message: 'Generating final post-deliberation stances...' });
-        const stancesPostControl = await generatePostStances(client, config, chatHistoryControl);
-        const stancesPostTreatment = await generatePostStances(client, config, chatHistoryTreatment);
+        const stancesPostControl = await generatePostStances(client, config, chatHistoryControl, (msg) => {
+          sendEvent({ stage: 'post_stances', message: `Control: ${msg}` });
+        });
+        const stancesPostTreatment = await generatePostStances(client, config, chatHistoryTreatment, (msg) => {
+          sendEvent({ stage: 'post_stances', message: `Treatment: ${msg}` });
+        });
 
         const resultsControl: ExperimentResult = {
           stances_pre: stancesPre,
@@ -118,13 +122,30 @@ export async function POST(req: NextRequest) {
         };
 
         // 5. Evaluation
-        await sendEvent({ status: 'running', stage: 'evaluation', message: 'Evaluating analytical metrics and DQI Judge rubric...' });
+        await sendEvent({
+          status: 'running',
+          stage: 'evaluation',
+          message: 'Computing semantic consensus (Cosine) & opinion plurality (CovD)...',
+        });
 
         const metricsControl = calculateAnalyticalMetrics(stancesPre, stancesPostControl);
         const metricsTreatment = calculateAnalyticalMetrics(stancesPre, stancesPostTreatment);
 
-        const dqiControl = await evaluateDQI(client, config, chatHistoryControl);
-        const dqiTreatment = await evaluateDQI(client, config, chatHistoryTreatment);
+        await sendEvent({
+          status: 'running',
+          stage: 'evaluation',
+          message: 'Evaluating discourse quality with LLM DQI Judge...',
+        });
+
+        // Run DQI evaluations concurrently
+        const [dqiControl, dqiTreatment] = await Promise.all([
+          evaluateDQI(client, config, chatHistoryControl, 'Control', (msg) => {
+            sendEvent({ stage: 'evaluation', message: msg });
+          }),
+          evaluateDQI(client, config, chatHistoryTreatment, 'Treatment', (msg) => {
+            sendEvent({ stage: 'evaluation', message: msg });
+          }),
+        ]);
 
         const evals = {
           Control: {
@@ -136,6 +157,12 @@ export async function POST(req: NextRequest) {
             dqi: dqiTreatment,
           },
         };
+
+        await sendEvent({
+          status: 'running',
+          stage: 'saving',
+          message: 'Finalizing experiment run and saving artifacts...',
+        });
 
         const assignedRunId = runId || `exp_${Date.now()}`;
         const experimentRun: ExperimentRun = {
