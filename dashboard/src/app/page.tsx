@@ -7,7 +7,7 @@ import { ConfigEditor } from '@/components/ConfigEditor';
 import { LiveSimulationRunner } from '@/components/LiveSimulationRunner';
 import { SupabaseGuideModal } from '@/components/SupabaseGuideModal';
 import { ApiSettingsModal, ApiSettings, PROVIDER_PRESETS } from '@/components/ApiSettingsModal';
-import { FloatingFooter } from '@/components/FloatingFooter';
+import { ResourcesView } from '@/components/ResourcesView';
 import {
   getExperimentRuns,
   deleteExperimentRun,
@@ -22,8 +22,8 @@ const API_SETTINGS_STORAGE_KEY = 'deliberation_byok_settings';
 
 export default function DashboardPage() {
   const [runs, setRuns] = useState<ExperimentRun[]>([SAMPLE_EXP000]);
-  const [expandedRunId, setExpandedRunId] = useState<string | null>('exp000');
-  const [activeTab, setActiveTab] = useState<'directory' | 'config'>('directory');
+  const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'directory' | 'config' | 'resources'>('directory');
   const [config, setConfig] = useState<ExperimentConfig>(DEFAULT_CONFIG);
   const [nextExpId, setNextExpId] = useState<string>('exp001');
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false);
@@ -66,10 +66,6 @@ export default function DashboardPage() {
       // 2. Load experiment runs from Supabase or local cache
       const { runs: loadedRuns } = await getExperimentRuns();
       setRuns(loadedRuns);
-
-      if (loadedRuns.length > 0) {
-        setExpandedRunId(loadedRuns[0].id);
-      }
 
       const nextId = await getNextExperimentId();
       setNextExpId(nextId);
@@ -147,7 +143,7 @@ export default function DashboardPage() {
         onOpenApiSettings={() => setIsApiSettingsOpen(true)}
       />
 
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-8 pb-28">
+      <main className="flex-1 mx-auto w-full max-w-[1840px] px-4 sm:px-8 lg:px-12 py-6 sm:py-8 pb-28">
         {activeTab === 'directory' && (
           <RunsDirectory
             runs={runs}
@@ -168,10 +164,9 @@ export default function DashboardPage() {
             onOpenApiSettings={() => setIsApiSettingsOpen(true)}
           />
         )}
-      </main>
 
-      {/* Floating Resources Dock */}
-      <FloatingFooter />
+        {activeTab === 'resources' && <ResourcesView />}
+      </main>
 
       {/* Live Simulation Runner Modal */}
       <LiveSimulationRunner

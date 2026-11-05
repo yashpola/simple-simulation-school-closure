@@ -137,7 +137,7 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
   };
 
   const generalExperimentDescription =
-    "An investigation evaluating how internal reflection ('think before speaking' via private scratchpads) impacts consensus, opinion plurality, and discourse quality in a dyadic citizen deliberation on primary school closures and mergers in Singapore.";
+    "An empirical multi-agent study evaluating how internal reflection ('think before speaking' via private scratchpads) impacts consensus, opinion plurality, and discourse quality in dyadic citizen deliberation.";
 
   return (
     <div className="space-y-6">
@@ -169,24 +169,45 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
         </div>
 
         {/* Plain-Language Explanation of What the Experiment Does & What Metrics Measure */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4 border-t border-neutral-100 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4.5 pt-4 border-t border-neutral-100 text-sm">
           <div className="rounded-xl bg-neutral-50 p-4 space-y-1.5 border border-neutral-100">
             <div className="flex items-center gap-2 text-neutral-900 font-bold text-xs uppercase tracking-wider font-mono">
               <Brain className="h-4 w-4 text-neutral-700" />
               <span>What this experiment does</span>
             </div>
             <p className="text-xs text-neutral-600 leading-relaxed">
-              Two AI personas—a <strong>Ministry of Education Official</strong> and a <strong>Primary School Teacher</strong>—deliberate whether to merge a historic primary school. We test whether prompting agents to engage in internal reflection ("think before speaking") improves compromise and discourse quality compared to direct debate.
+              An empirical multi-agent study evaluating whether prompting LLMs to engage in internal reflection ("think before speaking" via private scratchpads) improves consensus, compromise, and deliberative discourse quality compared to standard direct dialogue.
             </p>
+          </div>
+
+          <div className="rounded-xl bg-neutral-50 p-4 space-y-2 border border-neutral-100">
+            <div className="flex items-center gap-2 text-neutral-900 font-bold text-xs uppercase tracking-wider font-mono">
+              <Scale className="h-4 w-4 text-neutral-700" />
+              <span>Consensus & Stance Shift</span>
+            </div>
+            <div className="text-xs text-neutral-600 leading-relaxed space-y-2">
+              <div>
+                <strong className="text-neutral-900 font-semibold">Consensus (Convergence):</strong>
+                <p className="mt-0.5 text-neutral-600">
+                  Semantic cosine similarity between participants' stances (0 to 1.0), measuring post-deliberation agreement.
+                </p>
+              </div>
+              <div className="border-t border-neutral-200/80 pt-2">
+                <strong className="text-neutral-900 font-semibold">Stance Change (Shift):</strong>
+                <p className="mt-0.5 text-neutral-600">
+                  Geometric distance each participant moved from baseline, measuring willingness to compromise.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="rounded-xl bg-neutral-50 p-4 space-y-1.5 border border-neutral-100">
             <div className="flex items-center gap-2 text-neutral-900 font-bold text-xs uppercase tracking-wider font-mono">
-              <Scale className="h-4 w-4 text-neutral-700" />
-              <span>Consensus & Stance Change</span>
+              <Layers className="h-4 w-4 text-neutral-700" />
+              <span>Opinion Plurality (CovD)</span>
             </div>
             <p className="text-xs text-neutral-600 leading-relaxed">
-              <strong>Consensus (Convergence)</strong> calculates how semantically close both participants' opinions become after discussion (0 to 1.0). <strong>Stance Change</strong> tracks how much each participant moved away from their initial stance, reflecting openness to compromise.
+              <strong className="text-neutral-900 font-semibold">Covariance Determinant (CovD)</strong> measures the geometric volume of opinion space. Higher values indicate preserved perspective diversity (pluralism), while lower values indicate tighter ideological convergence.
             </p>
           </div>
 
@@ -196,7 +217,7 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
               <span>Discourse Quality (DQI)</span>
             </div>
             <p className="text-xs text-neutral-600 leading-relaxed">
-              An automated LLM judge scores each turn (out of 15) using a strict political science rubric across 5 dimensions: depth of justification, collective reasoning, mutual civility, concrete solutions, and direct interactivity (penalizing parallel monologues).
+              An automated LLM judge scores each turn (out of 15) using a strict political science rubric across 5 dimensions: depth of justification, collective reasoning, civility, concrete solutions, and direct interactivity.
             </p>
           </div>
         </div>
@@ -204,10 +225,10 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
 
       {/* Search Filter & Count */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex-1 max-w-md">
+        <div className="flex-1 max-w-xl">
           <input
             type="text"
-            placeholder="Search runs by ID, persona, or keyword..."
+            placeholder="Search runs by ID, model, or keyword..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none shadow-2xs"
@@ -218,26 +239,25 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
         </div>
       </div>
 
-      {/* Runs Table with Bold Headers, Explicit Timestamp, CovD Column, and Verdict */}
+      {/* Runs Table with Bold Headers and Explicit Timestamp (No Verdict Column) */}
       <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm table-auto">
             <thead className="border-b border-neutral-200 bg-neutral-100/90 text-sm font-bold text-neutral-950">
               <tr>
-                <th className="px-5 py-5 font-bold text-neutral-950">Run</th>
-                <th className="px-5 py-5 font-bold text-neutral-950">Timestamp</th>
-                <th className="px-5 py-5 font-bold text-neutral-950 min-w-[190px]">Consensus (Convergence)</th>
-                <th className="px-5 py-5 font-bold text-neutral-950 min-w-[170px]">Stance Change</th>
-                <th className="px-5 py-5 font-bold text-neutral-950 min-w-[170px]">Plurality (CovD)</th>
-                <th className="px-5 py-5 font-bold text-neutral-950 min-w-[170px]">Discourse Quality (DQI)</th>
-                <th className="px-5 py-5 font-bold text-neutral-950 min-w-[220px]">Verdict</th>
-                <th className="px-5 py-5 text-right font-bold text-neutral-950">Actions</th>
+                <th className="px-6 py-5.5 font-bold text-neutral-950 min-w-[220px]">Run</th>
+                <th className="px-6 py-5.5 font-bold text-neutral-950 min-w-[180px]">Timestamp</th>
+                <th className="px-6 py-5.5 font-bold text-neutral-950 min-w-[220px]">Consensus (Convergence)</th>
+                <th className="px-6 py-5.5 font-bold text-neutral-950 min-w-[200px]">Stance Change</th>
+                <th className="px-6 py-5.5 font-bold text-neutral-950 min-w-[200px]">Plurality (CovD)</th>
+                <th className="px-6 py-5.5 font-bold text-neutral-950 min-w-[200px]">Discourse Quality (DQI)</th>
+                <th className="px-6 py-5.5 text-right font-bold text-neutral-950 min-w-[170px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200 font-sans">
               {filteredRuns.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-neutral-500 text-sm">
+                  <td colSpan={7} className="px-6 py-12 text-center text-neutral-500 text-sm">
                     No experiment runs found. Click "Configure & Run New" to launch a deliberation trial.
                   </td>
                 </tr>
@@ -296,10 +316,10 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                         }`}
                       >
                         {/* Run Column */}
-                        <td className="px-5 py-6">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-100 text-neutral-800 shrink-0 shadow-2xs">
-                              <Folder className="h-5 w-5 text-amber-600" />
+                        <td className="px-6 py-7">
+                          <div className="flex items-center gap-3.5">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-100 text-neutral-800 shrink-0 shadow-2xs">
+                              <Folder className="h-5.5 w-5.5 text-amber-600" />
                             </div>
                             <div className="space-y-0.5">
                               <div className="flex items-center gap-1.5">
@@ -320,8 +340,8 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                         </td>
 
                         {/* Dedicated Timestamp Column */}
-                        <td className="px-5 py-6">
-                          <div className="flex items-start gap-2">
+                        <td className="px-6 py-7">
+                          <div className="flex items-start gap-2.5">
                             <Clock className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" />
                             <div className="space-y-0.5">
                               <div className="text-sm font-bold text-neutral-900 font-mono">
@@ -335,104 +355,83 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                         </td>
 
                         {/* Consensus (Split between Control & Treatment - No Pill) */}
-                        <td className="px-5 py-6">
-                          <div className="space-y-1 font-mono text-xs">
-                            <div className="flex items-center justify-between gap-2.5">
+                        <td className="px-6 py-7">
+                          <div className="space-y-1.5 font-mono text-xs">
+                            <div className="flex items-center justify-between gap-3">
                               <span className="text-neutral-500 font-sans">Standard:</span>
                               <span className="font-bold text-neutral-900">{ctrlConv.toFixed(4)}</span>
                             </div>
-                            <div className="flex items-center justify-between gap-2.5">
+                            <div className="flex items-center justify-between gap-3">
                               <span className="text-amber-900 font-sans font-medium">Reflective:</span>
                               <span className="font-bold text-neutral-950">{trtConv.toFixed(4)}</span>
                             </div>
-                            <div className="text-[11px] text-neutral-400 font-sans border-t border-neutral-100 pt-0.5">
-                              Baseline Pre: {preConv.toFixed(4)}
+                            <div className="flex items-center justify-between gap-3 border-t border-neutral-200/90 pt-1.5 text-xs">
+                              <span className="text-neutral-600 font-sans font-medium">Baseline Pre:</span>
+                              <span className="font-bold text-neutral-900 font-mono">{preConv.toFixed(4)}</span>
                             </div>
                           </div>
                         </td>
 
                         {/* Stance Change (Split between Control & Treatment) */}
-                        <td className="px-5 py-6">
-                          <div className="space-y-1 font-mono text-xs">
-                            <div className="flex items-center justify-between gap-2.5">
+                        <td className="px-6 py-7">
+                          <div className="space-y-1.5 font-mono text-xs">
+                            <div className="flex items-center justify-between gap-3">
                               <span className="text-neutral-500 font-sans">Standard:</span>
                               <span className="font-bold text-neutral-900">{ctrlShift.toFixed(4)}</span>
                             </div>
-                            <div className="flex items-center justify-between gap-2.5">
+                            <div className="flex items-center justify-between gap-3">
                               <span className="text-amber-900 font-sans font-medium">Reflective:</span>
                               <span className="font-bold text-neutral-950">{trtShift.toFixed(4)}</span>
                             </div>
-                            <div className="text-[11px] text-neutral-400 font-sans border-t border-neutral-100 pt-0.5">
-                              Pre → Post Shift
+                            <div className="flex items-center justify-between gap-3 border-t border-neutral-200/90 pt-1.5 text-xs">
+                              <span className="text-neutral-600 font-sans font-medium">Baseline Shift:</span>
+                              <span className="font-bold text-neutral-900 font-mono">Pre → Post</span>
                             </div>
                           </div>
                         </td>
 
                         {/* CovD Plurality (Split between Control & Treatment) */}
-                        <td className="px-5 py-6">
-                          <div className="space-y-1 font-mono text-xs">
-                            <div className="flex items-center justify-between gap-2.5">
+                        <td className="px-6 py-7">
+                          <div className="space-y-1.5 font-mono text-xs">
+                            <div className="flex items-center justify-between gap-3">
                               <span className="text-neutral-500 font-sans">Standard:</span>
                               <span className="font-bold text-neutral-900">{ctrlCovD.toFixed(4)}</span>
                             </div>
-                            <div className="flex items-center justify-between gap-2.5">
+                            <div className="flex items-center justify-between gap-3">
                               <span className="text-amber-900 font-sans font-medium">Reflective:</span>
                               <span className="font-bold text-neutral-950">{trtCovD.toFixed(4)}</span>
                             </div>
-                            <div className="text-[11px] text-neutral-400 font-sans border-t border-neutral-100 pt-0.5">
-                              Baseline Pre: {preCovD.toFixed(4)}
+                            <div className="flex items-center justify-between gap-3 border-t border-neutral-200/90 pt-1.5 text-xs">
+                              <span className="text-neutral-600 font-sans font-medium">Baseline Pre:</span>
+                              <span className="font-bold text-neutral-900 font-mono">{preCovD.toFixed(4)}</span>
                             </div>
                           </div>
                         </td>
 
                         {/* DQI Score (Split between Control & Treatment) */}
-                        <td className="px-5 py-6">
-                          <div className="space-y-1 font-mono text-xs">
-                            <div className="flex items-center justify-between gap-2.5">
+                        <td className="px-6 py-7">
+                          <div className="space-y-1.5 font-mono text-xs">
+                            <div className="flex items-center justify-between gap-3">
                               <span className="text-neutral-500 font-sans">Standard:</span>
                               <span className="font-bold text-neutral-900">
                                 {ctrlDqi > 0 ? ctrlDqi.toFixed(2) : '-'} <span className="text-neutral-400 text-[10px]">/ 15</span>
                               </span>
                             </div>
-                            <div className="flex items-center justify-between gap-2.5">
+                            <div className="flex items-center justify-between gap-3">
                               <span className="text-amber-900 font-sans font-medium">Reflective:</span>
                               <span className="font-bold text-neutral-950">
                                 {trtDqi > 0 ? trtDqi.toFixed(2) : '-'} <span className="text-neutral-400 text-[10px]">/ 15</span>
                               </span>
                             </div>
-                            <div className="text-[11px] text-neutral-400 font-sans border-t border-neutral-100 pt-0.5">
-                              5-Criteria Rubric
+                            <div className="flex items-center justify-between gap-3 border-t border-neutral-200/90 pt-1.5 text-xs">
+                              <span className="text-neutral-600 font-sans font-medium">Standard Scale:</span>
+                              <span className="font-bold text-neutral-900 font-mono">5 Rubrics</span>
                             </div>
                           </div>
                         </td>
 
-                        {/* Verdict Column (Direct comparison without isolated mystery percentages) */}
-                        <td className="px-5 py-6">
-                          {scratchpadHelped ? (
-                            <div className="space-y-1">
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200 shadow-2xs">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                                <span>Scratchpad Helped</span>
-                              </span>
-                              <div className="text-[11px] text-neutral-600 font-mono">
-                                Consensus: {trtConv.toFixed(4)} vs {ctrlConv.toFixed(4)} ({scratchpadDelta >= 0 ? '+' : ''}{scratchpadDelta.toFixed(4)})
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 border border-amber-200 shadow-2xs">
-                                <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                                <span>Scratchpad Did Not Help</span>
-                              </span>
-                              <div className="text-[11px] text-neutral-600 font-mono">
-                                Consensus: {trtConv.toFixed(4)} vs {ctrlConv.toFixed(4)}
-                              </div>
-                            </div>
-                          )}
-                        </td>
-
                         {/* Actions Column */}
-                        <td className="px-5 py-6 text-right">
+                        <td className="px-6 py-7 text-right">
                           <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => onToggleExpand(run.id)}
@@ -473,50 +472,24 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                       {/* Inline Expanded Run Details View */}
                       {isExpanded && (
                         <tr className="bg-neutral-50/70 border-b border-neutral-200">
-                          <td colSpan={8} className="p-0">
+                          <td colSpan={7} className="p-0">
                             <div className="p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
                               {/* Header with General Study Description (Not Run-Specific) & Exact Timestamp */}
-                              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-                                <div className="space-y-1 max-w-3xl">
-                                  <div className="flex items-center gap-2">
-                                    <span className="rounded bg-neutral-900 text-white px-2 py-0.5 font-mono text-xs font-bold">
-                                      {run.id}
-                                    </span>
-                                    <span className="text-xs font-bold text-neutral-500 font-mono">
-                                      Executed on {ts.full}
-                                    </span>
-                                  </div>
-                                  <h3 className="text-lg font-bold tracking-tight text-neutral-900 mt-1">
-                                    School Closure Deliberation · Detailed Findings
-                                  </h3>
-                                  <p className="text-xs text-neutral-600 leading-relaxed">
-                                    {generalExperimentDescription}
-                                  </p>
+                              <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="rounded bg-neutral-900 text-white px-2 py-0.5 font-mono text-xs font-bold">
+                                    {run.id}
+                                  </span>
+                                  <span className="text-xs font-bold text-neutral-500 font-mono">
+                                    Executed on {ts.full}
+                                  </span>
                                 </div>
-
-                                <div className="shrink-0">
-                                  <div
-                                    className={`rounded-xl border px-4 py-2.5 text-right ${
-                                      scratchpadHelped
-                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-                                        : 'border-amber-200 bg-amber-50 text-amber-900'
-                                    }`}
-                                  >
-                                    <div className="text-[10px] font-mono uppercase tracking-wider font-bold opacity-75">
-                                      Verdict
-                                    </div>
-                                    <div className="text-xs font-bold mt-0.5">
-                                      {scratchpadHelped
-                                        ? 'Internal Scratchpad Helped'
-                                        : 'Internal Scratchpad Did Not Help'}
-                                    </div>
-                                    <div className="text-[11px] font-mono mt-0.5 opacity-90">
-                                      {scratchpadHelped
-                                        ? `Reflective (${trtConv.toFixed(4)}) > Standard (${ctrlConv.toFixed(4)}) · Δ +${scratchpadDelta.toFixed(4)}`
-                                        : `Reflective (${trtConv.toFixed(4)}) ≤ Standard (${ctrlConv.toFixed(4)})`}
-                                    </div>
-                                  </div>
-                                </div>
+                                <h3 className="text-lg font-bold tracking-tight text-neutral-900">
+                                  School Closure Deliberation · Detailed Findings
+                                </h3>
+                                <p className="text-xs text-neutral-600 leading-relaxed max-w-4xl">
+                                  {generalExperimentDescription}
+                                </p>
                               </div>
 
                               {/* Key Metrics Row (Split Between Standard & Reflective) */}
@@ -535,11 +508,14 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                                       <span className="font-bold text-neutral-950">{trtConv.toFixed(4)}</span>
                                     </div>
                                   </div>
-                                  <div className="pt-1.5 border-t border-neutral-100 text-[11px] text-neutral-500 font-mono flex items-center justify-between">
-                                    <span>Pre: {preConv.toFixed(4)}</span>
-                                    <span className={scratchpadDelta >= 0 ? 'text-emerald-700 font-bold' : 'text-neutral-600'}>
-                                      Δ {scratchpadDelta >= 0 ? '+' : ''}{scratchpadDelta.toFixed(4)}
-                                    </span>
+                                  <div className="pt-2 border-t border-neutral-200/90 text-xs font-mono flex items-center justify-between">
+                                    <span className="text-neutral-600 font-sans font-medium">Baseline Pre-Deliberation:</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-neutral-900">{preConv.toFixed(4)}</span>
+                                      <span className={scratchpadDelta >= 0 ? 'text-emerald-700 font-bold' : 'text-neutral-600'}>
+                                        (Δ {scratchpadDelta >= 0 ? '+' : ''}{scratchpadDelta.toFixed(4)})
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
 
@@ -557,8 +533,9 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                                       <span className="font-bold text-neutral-950">{trtShift.toFixed(4)}</span>
                                     </div>
                                   </div>
-                                  <div className="pt-1.5 border-t border-neutral-100 text-[11px] text-neutral-500 font-sans">
-                                    Pre → Post Shift Distance
+                                  <div className="pt-2 border-t border-neutral-200/90 text-xs flex items-center justify-between">
+                                    <span className="text-neutral-600 font-sans font-medium">Baseline Shift:</span>
+                                    <span className="font-bold text-neutral-900 font-mono">Pre → Post Distance</span>
                                   </div>
                                 </div>
 
@@ -576,8 +553,9 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                                       <span className="font-bold text-neutral-950">{trtCovD.toFixed(4)}</span>
                                     </div>
                                   </div>
-                                  <div className="pt-1.5 border-t border-neutral-100 text-[11px] text-neutral-500 font-mono">
-                                    Baseline Pre: {preCovD.toFixed(4)}
+                                  <div className="pt-2 border-t border-neutral-200/90 text-xs font-mono flex items-center justify-between">
+                                    <span className="text-neutral-600 font-sans font-medium">Baseline Pre-Deliberation:</span>
+                                    <span className="font-bold text-neutral-900">{preCovD.toFixed(4)}</span>
                                   </div>
                                 </div>
 
@@ -599,8 +577,9 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="pt-1.5 border-t border-neutral-100 text-[11px] text-neutral-500 font-sans">
-                                    5-Criteria Rubric Total
+                                  <div className="pt-2 border-t border-neutral-200/90 text-xs flex items-center justify-between">
+                                    <span className="text-neutral-600 font-sans font-medium">Standard Scale:</span>
+                                    <span className="font-bold text-neutral-900 font-mono">5-Criteria Rubric Total</span>
                                   </div>
                                 </div>
                               </div>

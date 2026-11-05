@@ -1,49 +1,32 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   FileText,
   Github,
   ExternalLink,
-  BookOpen,
-  Copy,
-  Check,
   Code2,
   Database,
   Layers,
   Sparkles,
-  Award
+  Award,
+  BookOpen
 } from 'lucide-react';
 
 export const ResourcesView: React.FC = () => {
-  const [copiedBibtex, setCopiedBibtex] = useState(false);
-
-  const bibtex = `@article{pola2026deliberation,
-  title={Evaluating Internal Reflection in Multi-Agent Citizen Deliberation: A Computational Study on School Closures in Singapore},
-  author={Pola, Yash},
-  year={2026},
-  url={https://github.com/yashpola/simple-simulation-school-closure}
-}`;
-
-  const handleCopyBibtex = () => {
-    navigator.clipboard.writeText(bibtex);
-    setCopiedBibtex(true);
-    setTimeout(() => setCopiedBibtex(false), 2000);
-  };
-
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header Banner */}
       <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-7 shadow-xs space-y-3">
         <div className="flex items-center gap-2">
           <span className="flex h-2.5 w-2.5 rounded-full bg-blue-500" />
           <span className="text-xs font-mono font-bold uppercase tracking-wider text-neutral-500">
-            Study Publications & Code
+            Study Documentation & Code
           </span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
-          Experiment Resources & Manuscript
+          Experiment Resources & Documentation
         </h2>
         <p className="text-sm text-neutral-600 max-w-3xl leading-relaxed">
-          Access the complete academic manuscript on Overleaf, explore the open-source reproduction repository on GitHub, or inspect the methodology used for LLM deliberation evaluation.
+          Access the project documentation on Overleaf, explore the open-source reproduction repository on GitHub, or inspect the experiment artifact architecture.
         </p>
       </div>
 
@@ -57,17 +40,17 @@ export const ResourcesView: React.FC = () => {
                 <FileText className="h-6 w-6" />
               </div>
               <span className="rounded-full bg-blue-100/70 px-2.5 py-0.5 font-mono text-[11px] font-bold text-blue-900">
-                Live Manuscript
+                Live Documentation
               </span>
             </div>
             <div>
-              <h3 className="text-lg font-bold text-neutral-900">Academic Paper (Overleaf)</h3>
+              <h3 className="text-lg font-bold text-neutral-900">Experiment Documentation (Overleaf)</h3>
               <p className="text-xs text-neutral-500 font-mono mt-0.5">
-                Manuscript & Empirical Findings
+                Theoretical Framework & Protocol Details
               </p>
             </div>
             <p className="text-xs text-neutral-600 leading-relaxed">
-              Read the complete research paper exploring the theoretical framework of internal reflection ("think before speaking") in multi-agent democratic deliberation, experimental setup on civic school closures, cosine convergence, opinion plurality, and calibrated Discourse Quality Index (DQI) scores.
+              Read the comprehensive experiment documentation detailing the multi-agent deliberation framework, prompt design, experimental protocol, analytical metric formulations (Cosine consensus convergence, CovD plurality), and calibrated Discourse Quality Index (DQI) evaluation rubric.
             </p>
           </div>
 
@@ -77,7 +60,7 @@ export const ResourcesView: React.FC = () => {
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-colors"
           >
-            <span>Read Manuscript on Overleaf</span>
+            <span>Open Documentation on Overleaf</span>
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         </div>
@@ -167,25 +150,6 @@ export const ResourcesView: React.FC = () => {
             </p>
           </div>
         </div>
-      </div>
-
-      {/* BibTeX Citation */}
-      <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold font-mono uppercase tracking-wider text-neutral-500">
-            Citation (BibTeX)
-          </span>
-          <button
-            onClick={handleCopyBibtex}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 shadow-2xs transition-colors"
-          >
-            {copiedBibtex ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-            <span>{copiedBibtex ? 'Copied' : 'Copy BibTeX'}</span>
-          </button>
-        </div>
-        <pre className="rounded-xl bg-neutral-900 p-4 font-mono text-xs text-neutral-200 overflow-x-auto">
-          {bibtex}
-        </pre>
       </div>
     </div>
   );
