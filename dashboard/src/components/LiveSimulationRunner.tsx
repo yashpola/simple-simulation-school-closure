@@ -10,7 +10,8 @@ import {
   Brain,
   MessageSquare,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  HelpCircle
 } from 'lucide-react';
 
 interface LiveSimulationRunnerProps {
@@ -37,12 +38,34 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
   const [liveTurns, setLiveTurns] = useState<Array<{ run: string; round: number; entry: any }>>([]);
   const [completedRun, setCompletedRun] = useState<ExperimentRun | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs, liveTurns]);
+
+  // Handle escape key to trigger confirmation or cancel confirmation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showExitConfirm) {
+          setShowExitConfirm(false);
+        } else if (isOpen) {
+          setShowExitConfirm(true);
+        }
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, showExitConfirm]);
+
+  const handleRequestClose = () => {
+    setShowExitConfirm(true);
+  };
 
   const startSimulation = async () => {
     setStatus('running');
@@ -141,7 +164,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/60 backdrop-blur-xs p-4">
-      <div className="flex flex-col h-[85vh] w-full max-w-4xl rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative flex flex-col h-[85vh] w-full max-w-4xl rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4 bg-neutral-50/70">
           <div className="flex items-center gap-3">
@@ -159,29 +182,81 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
           </div>
 
           <button
-            onClick={onClose}
+            onClick={handleRequestClose}
             className="rounded-lg p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+            title="Close simulation runner"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Progress Bar Header */}
-        <div className="border-b border-neutral-200 bg-white px-6 py-3">
-          <div className="flex items-center justify-between text-xs font-mono mb-1.5">
-            <div className="flex items-center gap-2">
-              {status === 'running' && <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-900" />}
-              {status === 'completed' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />}
-              {status === 'error' && <AlertTriangle className="h-3.5 w-3.5 text-red-600" />}
-              <span className="font-semibold text-neutral-800">{stage}</span>
+        {/* Progress Bar Header with High-Visibility Completion % Display */}
+        <div className="border-b border-neutral-200 bg-white px-6 py-4 shadow-2xs">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              {status === 'running' && (
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 text-neutral-900 border border-neutral-200/80 shadow-2xs">
+                  <Loader2 className="h-4.5 w-4.5 animate-spin text-neutral-900" />
+                </div>
+              )}
+              {status === 'completed' && (
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600" />
+                </div>
+              )}
+              {status === 'error' && (
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 text-red-700 border border-red-200 shadow-2xs">
+                  <AlertTriangle className="h-4.5 w-4.5 text-red-600" />
+                </div>
+              )}
+              {status === 'idle' && (
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 border border-neutral-200/80 shadow-2xs">
+                  <Play className="h-4 w-4 fill-current ml-0.5" />
+                </div>
+              )}
+              <div>
+                <span className="text-sm font-bold text-neutral-950 block leading-tight">
+                  {stage}
+                </span>
+                <span className="text-[11px] text-neutral-500 font-mono">
+                  {status === 'running'
+                    ? 'Deliberation trial actively streaming turns...'
+                    : status === 'completed'
+                    ? 'Simulation complete · Evaluated & persisted'
+                    : status === 'error'
+                    ? 'Simulation halted on error'
+                    : 'Awaiting execution trigger'}
+                </span>
+              </div>
             </div>
-            <span className="text-neutral-500">{percent}%</span>
+
+            {/* High-Visibility Completion % Display Badge */}
+            <div className="flex items-center gap-2.5 rounded-xl border border-neutral-200/90 bg-neutral-50/90 px-4 py-2 shadow-2xs">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-neutral-500">
+                Completion:
+              </span>
+              <span
+                className={`font-mono text-2xl sm:text-3xl font-black tracking-tight leading-none ${
+                  status === 'completed'
+                    ? 'text-emerald-600'
+                    : status === 'error'
+                    ? 'text-red-600'
+                    : 'text-neutral-950'
+                }`}
+              >
+                {percent}%
+              </span>
+            </div>
           </div>
 
-          <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-neutral-100 border border-neutral-200/60">
             <div
-              className={`h-full transition-all duration-300 ${
-                status === 'error' ? 'bg-red-500' : status === 'completed' ? 'bg-emerald-500' : 'bg-neutral-900'
+              className={`h-full transition-all duration-500 ${
+                status === 'error'
+                  ? 'bg-red-500'
+                  : status === 'completed'
+                  ? 'bg-emerald-500'
+                  : 'bg-neutral-950'
               }`}
               style={{ width: `${percent}%` }}
             />
@@ -303,13 +378,90 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
               </button>
             )}
             <button
-              onClick={onClose}
-              className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs"
+              onClick={handleRequestClose}
+              className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs transition-colors"
             >
               Close
             </button>
           </div>
         </div>
+
+        {/* Exit Confirmation Dialog Overlay */}
+        {showExitConfirm && (
+          <div
+            className="absolute inset-0 z-50 flex items-center justify-center bg-neutral-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+            onClick={() => setShowExitConfirm(false)}
+          >
+            <div
+              className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-3.5">
+                <div
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl shrink-0 ${
+                    status === 'running'
+                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                      : 'bg-neutral-100 text-neutral-800 border border-neutral-200'
+                  }`}
+                >
+                  {status === 'running' ? (
+                    <AlertTriangle className="h-5 w-5 text-amber-700" />
+                  ) : (
+                    <HelpCircle className="h-5 w-5 text-neutral-700" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-neutral-900">
+                    Exit Simulation Runner?
+                  </h4>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    {status === 'running'
+                      ? 'An active experiment trial is in progress.'
+                      : 'Please confirm before closing this window.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-neutral-50 p-3.5 border border-neutral-100 text-xs text-neutral-600 leading-relaxed">
+                {status === 'running' ? (
+                  <>
+                    Deliberation trial <strong>{targetExpId}</strong> is currently executing (
+                    <strong className="text-neutral-950 font-mono">{percent}%</strong> complete).
+                    Closing now will disconnect your view from the live event stream.
+                  </>
+                ) : (
+                  <>
+                    Are you sure you want to exit the live simulation runner and return to the experiment dashboard?
+                  </>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-neutral-100">
+                <button
+                  type="button"
+                  onClick={() => setShowExitConfirm(false)}
+                  className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 shadow-2xs transition-colors"
+                >
+                  Cancel / Stay
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExitConfirm(false);
+                    onClose();
+                  }}
+                  className={`rounded-xl px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors ${
+                    status === 'running'
+                      ? 'bg-amber-600 hover:bg-amber-700'
+                      : 'bg-neutral-900 hover:bg-neutral-800'
+                  }`}
+                >
+                  Yes, Exit Runner
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
