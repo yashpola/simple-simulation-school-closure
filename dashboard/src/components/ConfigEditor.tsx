@@ -20,7 +20,8 @@ import {
   MessageSquare,
   Brain,
   ShieldCheck,
-  Lock
+  Lock,
+  ChevronDown
 } from 'lucide-react';
 
 interface ConfigEditorProps {
@@ -446,6 +447,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                   <button
                     key={m}
                     type="button"
+                    title={m}
                     onClick={() => {
                       updateModelConfig('model_assignments', {
                         'MOE Official': m,
@@ -461,7 +463,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                         : 'border-neutral-300 bg-white text-neutral-800 hover:border-neutral-900 hover:text-neutral-950'
                     }`}
                   >
-                    Apply {m} to all
+                    Apply {m.split('/').pop() || m} to all
                   </button>
                 ))}
               </div>
@@ -472,22 +474,25 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                 <label className="text-sm font-semibold text-neutral-800 block">
                   {roleKey}:
                 </label>
-                <div className="flex gap-2 mt-1.5">
-                  <select
-                    value={DEFAULT_EXPERIMENT_MODELS.includes(config.model_config.model_assignments[roleKey] as any) ? config.model_config.model_assignments[roleKey] : 'custom'}
-                    onChange={(e) => {
-                      if (e.target.value !== 'custom') {
-                        const assignments = { ...config.model_config.model_assignments, [roleKey]: e.target.value };
-                        updateModelConfig('model_assignments', assignments);
-                      }
-                    }}
-                    className="rounded-lg border border-neutral-300 bg-white px-2.5 py-2 text-xs font-mono font-medium text-neutral-900 shadow-2xs shrink-0 max-w-[190px]"
-                  >
-                    {DEFAULT_EXPERIMENT_MODELS.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                    <option value="custom">Custom...</option>
-                  </select>
+                <div className="flex flex-col sm:flex-row gap-2 mt-1.5">
+                  <div className="relative shrink-0 sm:w-64">
+                    <select
+                      value={DEFAULT_EXPERIMENT_MODELS.includes(config.model_config.model_assignments[roleKey] as any) ? config.model_config.model_assignments[roleKey] : 'custom'}
+                      onChange={(e) => {
+                        if (e.target.value !== 'custom') {
+                          const assignments = { ...config.model_config.model_assignments, [roleKey]: e.target.value };
+                          updateModelConfig('model_assignments', assignments);
+                        }
+                      }}
+                      className="w-full appearance-none rounded-lg border border-neutral-300 bg-white pl-3 pr-9 py-2 text-xs font-mono font-medium text-neutral-900 shadow-2xs hover:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-900 cursor-pointer truncate"
+                    >
+                      {DEFAULT_EXPERIMENT_MODELS.map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                      <option value="custom">Custom model...</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+                  </div>
                   <input
                     type="text"
                     value={config.model_config.model_assignments[roleKey] || ''}
@@ -495,7 +500,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                       const assignments = { ...config.model_config.model_assignments, [roleKey]: e.target.value };
                       updateModelConfig('model_assignments', assignments);
                     }}
-                    placeholder="Enter or select model name"
+                    placeholder="Enter or select model identifier"
                     className="flex-1 rounded-lg border border-neutral-300 px-3.5 py-2 text-sm font-mono text-neutral-900 shadow-2xs"
                   />
                 </div>
@@ -595,17 +600,20 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                   Smart Model Adapter
                 </span>
               </div>
-              <select
-                value={config.model_config.model_parameters.reasoning_level ?? 'auto'}
-                onChange={(e) => updateModelParams('reasoning_level', e.target.value as ReasoningLevel)}
-                className="w-full mt-1.5 rounded-lg border border-neutral-300 bg-white px-3.5 py-2 text-sm font-sans font-medium text-neutral-900 shadow-2xs"
-              >
-                <option value="auto">Auto / Model Default (Recommended)</option>
-                <option value="off">Off (Disable native thinking tokens / fast)</option>
-                <option value="low">Low (Fast, ~1,000 thinking tokens / brief reflection)</option>
-                <option value="medium">Medium (Balanced, ~2,000 thinking tokens)</option>
-                <option value="high">High (Deep, ~4,000 thinking tokens / maximum exploration)</option>
-              </select>
+              <div className="relative mt-1.5">
+                <select
+                  value={config.model_config.model_parameters.reasoning_level ?? 'auto'}
+                  onChange={(e) => updateModelParams('reasoning_level', e.target.value as ReasoningLevel)}
+                  className="w-full appearance-none rounded-lg border border-neutral-300 bg-white pl-3.5 pr-9 py-2 text-sm font-sans font-medium text-neutral-900 shadow-2xs hover:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-900 cursor-pointer"
+                >
+                  <option value="auto">Auto / Model Default (Recommended)</option>
+                  <option value="off">Off (Disable native thinking tokens / fast)</option>
+                  <option value="low">Low (Fast, ~1,000 thinking tokens / brief reflection)</option>
+                  <option value="medium">Medium (Balanced, ~2,000 thinking tokens)</option>
+                  <option value="high">High (Deep, ~4,000 thinking tokens / maximum exploration)</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+              </div>
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-2.5 text-xs text-neutral-600 mt-2 space-y-1">
                 <p className="font-semibold text-neutral-800">Cross-Model Handling:</p>
                 <ul className="list-disc list-inside space-y-0.5 text-[11px] text-neutral-600">

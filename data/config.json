@@ -1,9 +1,9 @@
 {
   "model_config": {
     "model_assignments": {
-      "MOE Official": "gpt-oss",
-      "Teacher": "gpt-oss",
-      "DQI_Judge": "gpt-oss"
+      "MOE Official": "openai/gpt-oss-120b",
+      "Teacher": "openai/gpt-oss-120b",
+      "DQI_Judge": "openai/gpt-oss-120b"
     },
     "model_parameters": {
       "agent_temperature": 0.7,

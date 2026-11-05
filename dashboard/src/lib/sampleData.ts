@@ -1,18 +1,18 @@
 import { ExperimentConfig, ExperimentRun } from '@/types/experiment';
 
 export const DEFAULT_EXPERIMENT_MODELS = [
-  'gpt-oss',
-  'qwen-9b',
-  'deepseekv4.1 flash 1017',
-  'muse spark open 813b',
+  'openai/gpt-oss-120b',
+  'Qwen/Qwen3.5-9B',
+  'deepseek-ai/DeepSeek-V4.1-Flash-1017',
+  'meta-models/Muse-Spark-Open-816B-A42B',
 ] as const;
 
 export const DEFAULT_CONFIG: ExperimentConfig = {
   model_config: {
     model_assignments: {
-      "MOE Official": "gpt-oss",
-      "Teacher": "gpt-oss",
-      "DQI_Judge": "gpt-oss"
+      "MOE Official": "openai/gpt-oss-120b",
+      "Teacher": "openai/gpt-oss-120b",
+      "DQI_Judge": "openai/gpt-oss-120b"
     },
     model_parameters: {
       agent_temperature: 0.7,
