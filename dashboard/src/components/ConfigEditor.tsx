@@ -4,7 +4,7 @@ import {
   Persona,
   ReasoningLevel,
 } from '@/types/experiment';
-import { DEFAULT_CONFIG } from '@/lib/sampleData';
+import { DEFAULT_CONFIG, DEFAULT_EXPERIMENT_MODELS } from '@/lib/sampleData';
 import { ApiSettings, PROVIDER_PRESETS } from './ApiSettingsModal';
 import {
   Play,
@@ -436,13 +436,13 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
               </div>
             </div>
 
-            {/* Quick suggested models for active provider */}
+            {/* Quick suggested models */}
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-2">
               <span className="text-xs font-bold text-neutral-700 block">
-                Quick Apply Model from {currentPreset.name}:
+                Quick Apply Default Model to All Roles:
               </span>
               <div className="flex flex-wrap gap-2">
-                {currentPreset.suggestedModels.map((m) => (
+                {DEFAULT_EXPERIMENT_MODELS.map((m) => (
                   <button
                     key={m}
                     type="button"
@@ -453,9 +453,15 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                         DQI_Judge: m,
                       });
                     }}
-                    className="rounded-lg border border-neutral-300 bg-white px-2.5 py-1 text-xs font-mono font-medium text-neutral-800 hover:border-neutral-900 hover:text-neutral-950 shadow-2xs"
+                    className={`rounded-lg border px-2.5 py-1 text-xs font-mono font-medium transition-colors shadow-2xs ${
+                      config.model_config.model_assignments['MOE Official'] === m &&
+                      config.model_config.model_assignments['Teacher'] === m &&
+                      config.model_config.model_assignments['DQI_Judge'] === m
+                        ? 'border-neutral-900 bg-neutral-900 text-white font-bold'
+                        : 'border-neutral-300 bg-white text-neutral-800 hover:border-neutral-900 hover:text-neutral-950'
+                    }`}
                   >
-                    Apply {m.split('/').pop()} to all
+                    Apply {m} to all
                   </button>
                 ))}
               </div>
@@ -466,15 +472,33 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                 <label className="text-sm font-semibold text-neutral-800 block">
                   {roleKey}:
                 </label>
-                <input
-                  type="text"
-                  value={config.model_config.model_assignments[roleKey] || ''}
-                  onChange={(e) => {
-                    const assignments = { ...config.model_config.model_assignments, [roleKey]: e.target.value };
-                    updateModelConfig('model_assignments', assignments);
-                  }}
-                  className="w-full mt-1.5 rounded-lg border border-neutral-300 px-3.5 py-2 text-sm font-mono text-neutral-900 shadow-2xs"
-                />
+                <div className="flex gap-2 mt-1.5">
+                  <select
+                    value={DEFAULT_EXPERIMENT_MODELS.includes(config.model_config.model_assignments[roleKey] as any) ? config.model_config.model_assignments[roleKey] : 'custom'}
+                    onChange={(e) => {
+                      if (e.target.value !== 'custom') {
+                        const assignments = { ...config.model_config.model_assignments, [roleKey]: e.target.value };
+                        updateModelConfig('model_assignments', assignments);
+                      }
+                    }}
+                    className="rounded-lg border border-neutral-300 bg-white px-2.5 py-2 text-xs font-mono font-medium text-neutral-900 shadow-2xs shrink-0 max-w-[190px]"
+                  >
+                    {DEFAULT_EXPERIMENT_MODELS.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                    <option value="custom">Custom...</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={config.model_config.model_assignments[roleKey] || ''}
+                    onChange={(e) => {
+                      const assignments = { ...config.model_config.model_assignments, [roleKey]: e.target.value };
+                      updateModelConfig('model_assignments', assignments);
+                    }}
+                    placeholder="Enter or select model name"
+                    className="flex-1 rounded-lg border border-neutral-300 px-3.5 py-2 text-sm font-mono text-neutral-900 shadow-2xs"
+                  />
+                </div>
               </div>
             ))}
           </div>

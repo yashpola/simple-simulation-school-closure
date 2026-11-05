@@ -33,45 +33,68 @@ interface ApiSettingsModalProps {
   onSaveSettings: (settings: ApiSettings, updateModels?: boolean) => void;
 }
 
+export const DEFAULT_EXPERIMENT_MODELS = [
+  'gpt-oss',
+  'qwen-9b',
+  'deepseekv4.1 flash 1017',
+  'muse spark open 813b',
+] as const;
+
 export const PROVIDER_PRESETS = {
   together: {
     name: 'Together AI',
     baseUrl: 'https://api.together.xyz/v1',
-    defaultModel: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+    defaultModel: 'gpt-oss',
     suggestedModels: [
-      'meta-llama/Llama-3.3-70B-Instruct-Turbo',
-      'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
-      'mistralai/Mixtral-8x7B-Instruct-v0.1',
-      'Qwen/Qwen2.5-72B-Instruct-Turbo',
+      'gpt-oss',
+      'qwen-9b',
+      'deepseekv4.1 flash 1017',
+      'muse spark open 813b',
     ],
   },
   openai: {
     name: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1',
-    defaultModel: 'gpt-4o-mini',
-    suggestedModels: ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo'],
+    defaultModel: 'gpt-oss',
+    suggestedModels: [
+      'gpt-oss',
+      'qwen-9b',
+      'deepseekv4.1 flash 1017',
+      'muse spark open 813b',
+    ],
   },
   openrouter: {
     name: 'OpenRouter',
     baseUrl: 'https://openrouter.ai/api/v1',
-    defaultModel: 'meta-llama/llama-3.3-70b-instruct',
+    defaultModel: 'gpt-oss',
     suggestedModels: [
-      'meta-llama/llama-3.3-70b-instruct',
-      'anthropic/claude-3.5-sonnet',
-      'google/gemini-flash-1.5',
+      'gpt-oss',
+      'qwen-9b',
+      'deepseekv4.1 flash 1017',
+      'muse spark open 813b',
     ],
   },
   groq: {
     name: 'Groq',
     baseUrl: 'https://api.groq.com/openai/v1',
-    defaultModel: 'llama-3.3-70b-versatile',
-    suggestedModels: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
+    defaultModel: 'gpt-oss',
+    suggestedModels: [
+      'gpt-oss',
+      'qwen-9b',
+      'deepseekv4.1 flash 1017',
+      'muse spark open 813b',
+    ],
   },
   custom: {
     name: 'Custom / Local',
     baseUrl: 'http://localhost:11434/v1',
-    defaultModel: 'llama3.2',
-    suggestedModels: ['llama3.2', 'mistral', 'custom-model'],
+    defaultModel: 'gpt-oss',
+    suggestedModels: [
+      'gpt-oss',
+      'qwen-9b',
+      'deepseekv4.1 flash 1017',
+      'muse spark open 813b',
+    ],
   },
 } as const;
 

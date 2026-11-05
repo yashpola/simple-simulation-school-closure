@@ -1,11 +1,18 @@
 import { ExperimentConfig, ExperimentRun } from '@/types/experiment';
 
+export const DEFAULT_EXPERIMENT_MODELS = [
+  'gpt-oss',
+  'qwen-9b',
+  'deepseekv4.1 flash 1017',
+  'muse spark open 813b',
+] as const;
+
 export const DEFAULT_CONFIG: ExperimentConfig = {
   model_config: {
     model_assignments: {
-      "MOE Official": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-      "Teacher": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-      "DQI_Judge": "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+      "MOE Official": "gpt-oss",
+      "Teacher": "gpt-oss",
+      "DQI_Judge": "gpt-oss"
     },
     model_parameters: {
       agent_temperature: 0.7,
@@ -62,7 +69,17 @@ export const SAMPLE_EXP000: ExperimentRun = {
   name: "Baseline Dyadic Deliberation (exp000)",
   description: "Comparing System 1 (Direct) vs System 2 (Internal Reflection Scratchpad) on School Mergers in Singapore",
   status: "completed",
-  config: DEFAULT_CONFIG,
+  config: {
+    ...DEFAULT_CONFIG,
+    model_config: {
+      ...DEFAULT_CONFIG.model_config,
+      model_assignments: {
+        "MOE Official": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        "Teacher": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        "DQI_Judge": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+      },
+    },
+  },
   results_control: {
     stances_pre: {
       "MOE Official": "As we deliberate on the proposed merger of our local heritage primary school with a newer school 3km away, I strongly believe that consolidation is not only necessary but also beneficial in the long run. The reality of falling enrollment is undeniable, and maintaining small, under-enrolled schools is inefficient and unsustainable. By merging, we can create a more vibrant and diverse student body, providing a richer social experience and broader opportunities for our children. A merged school would also allow for a more optimal allocation of resources, enabling us to offer a wider range of subjects, programs, and facilities that might not be feasible for smaller, standalone schools. Furthermore, this merger would help ensure the long-term viability of our education system, enabling us to better respond to the challenges posed by declining birth rates. I'm open to discussing the potential concerns and mitigation strategies, such as addressing the heritage status of the existing school and minimizing disruptions to students and families, but I firmly believe that the benefits of consolidation outweigh the costs, and I recommend that we support the MOE's proposal, with the caveat that we work together to implement it in a way that respects the community's heritage and minimizes negative impacts.",

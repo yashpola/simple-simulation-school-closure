@@ -260,10 +260,12 @@ export function adaptModelPayload(
     m.includes("deepseek") ||
     m.includes("r1") ||
     m.includes("reasoning") ||
-    m.includes("muse");
+    m.includes("muse") ||
+    m.includes("gpt-oss") ||
+    m.includes("oss");
 
   const payload: any = {
-    model: model || "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    model: model || "gpt-oss",
     messages: [{ role: "system", content: systemPrompt }, ...messages],
   };
 
@@ -379,7 +381,7 @@ export async function generatePreStances(
     const model =
       p.model ||
       config.model_config.model_assignments[p.id] ||
-      "meta-llama/Llama-3.3-70B-Instruct-Turbo";
+      "gpt-oss";
     const sysPrompt = `${p.description}\n\n${prePrompt}\n${topic}`;
 
     const text = await callLLM(
@@ -519,7 +521,7 @@ export async function generatePostStances(
     const model =
       p.model ||
       config.model_config.model_assignments[p.id] ||
-      "meta-llama/Llama-3.3-70B-Instruct-Turbo";
+      "gpt-oss";
     const sysPrompt = `${p.description}\n\nTopic: ${topic}\n${postPrompt}`;
 
     const messages: Array<{ role: "user"; content: string }> = [];
@@ -580,7 +582,7 @@ export async function evaluateDQI(
 
   const judgeModel =
     config.model_config.model_assignments["DQI_Judge"] ||
-    "meta-llama/Llama-3.3-70B-Instruct-Turbo";
+    "gpt-oss";
   const temp = config.model_config.model_parameters.judge_temperature ?? 0.1;
   const rawSeed = config.model_config.model_parameters.seed;
   const seed = typeof rawSeed === "number" ? rawSeed : null;

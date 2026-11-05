@@ -1,9 +1,9 @@
 {
   "model_config": {
     "model_assignments": {
-      "MOE Official": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-      "Teacher": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-      "DQI_Judge": "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+      "MOE Official": "gpt-oss",
+      "Teacher": "gpt-oss",
+      "DQI_Judge": "gpt-oss"
     },
     "model_parameters": {
       "agent_temperature": 0.7,

@@ -22,7 +22,7 @@ def generate_llm_response(
         is_llama_or_standard = any(k in m for k in ("llama", "mistral", "mixtral", "gemma", "phi"))
         is_qwen = "qwen" in m or "qwq" in m
         is_openai_o = m.startswith("o1") or m.startswith("o3") or "/o1" in m or "/o3" in m
-        is_deepseek = "deepseek" in m or "r1" in m or "reasoning" in m or "muse" in m
+        is_deepseek = any(k in m for k in ("deepseek", "r1", "reasoning", "muse", "gpt-oss", "oss"))
 
         kwargs: Dict[str, Any] = {
             "model": model,

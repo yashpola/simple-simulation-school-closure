@@ -838,15 +838,15 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                                       <div className="divide-y divide-neutral-100 text-xs">
                                         <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">MOE Official Model:</span>
-                                          <span className="font-mono font-bold text-neutral-900">{modelAssignments['MOE Official'] || 'meta-llama/Llama-3.3-70B-Instruct-Turbo'}</span>
+                                          <span className="font-mono font-bold text-neutral-900">{modelAssignments['MOE Official'] || 'gpt-oss'}</span>
                                         </div>
                                         <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">Teacher Model:</span>
-                                          <span className="font-mono font-bold text-neutral-900">{modelAssignments['Teacher'] || 'meta-llama/Llama-3.3-70B-Instruct-Turbo'}</span>
+                                          <span className="font-mono font-bold text-neutral-900">{modelAssignments['Teacher'] || 'gpt-oss'}</span>
                                         </div>
                                         <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">DQI Judge Model:</span>
-                                          <span className="font-mono font-bold text-neutral-900">{modelAssignments['DQI_Judge'] || 'meta-llama/Llama-3.3-70B-Instruct-Turbo'}</span>
+                                          <span className="font-mono font-bold text-neutral-900">{modelAssignments['DQI_Judge'] || 'gpt-oss'}</span>
                                         </div>
                                         <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">Agent Sampling Temperature:</span>
