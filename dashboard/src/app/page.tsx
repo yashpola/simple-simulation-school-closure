@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { RunsDirectory } from '@/components/RunsDirectory';
 import { ConfigEditor } from '@/components/ConfigEditor';
@@ -11,7 +11,7 @@ import { ResourcesView } from '@/components/ResourcesView';
 import {
   getExperimentRuns,
   deleteExperimentRun,
-  getNextExperimentId,
+  computeNextExperimentId,
   isSupabaseConfigured,
   saveExperimentRun,
 } from '@/lib/supabase';
@@ -25,12 +25,14 @@ export default function DashboardPage() {
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'directory' | 'config' | 'resources'>('directory');
   const [config, setConfig] = useState<ExperimentConfig>(DEFAULT_CONFIG);
-  const [nextExpId, setNextExpId] = useState<string>('exp001');
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false);
   const [isRunnerOpen, setIsRunnerOpen] = useState<boolean>(false);
   const [isSetupOpen, setIsSetupOpen] = useState<boolean>(false);
   const [isApiSettingsOpen, setIsApiSettingsOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // Dynamically derive nextExpId reactively from existing runs state
+  const nextExpId = useMemo(() => computeNextExperimentId(runs), [runs]);
 
   // Client-Side BYOK Settings
   const [apiSettings, setApiSettings] = useState<ApiSettings>({
@@ -66,9 +68,6 @@ export default function DashboardPage() {
       // 2. Load experiment runs from Supabase or local cache
       const { runs: loadedRuns } = await getExperimentRuns();
       setRuns(loadedRuns);
-
-      const nextId = await getNextExperimentId();
-      setNextExpId(nextId);
       setLoading(false);
     }
 
@@ -114,11 +113,17 @@ export default function DashboardPage() {
   };
 
   const handleDeleteRun = async (id: string) => {
+    // Instant optimistic UI update so target run ID updates with zero latency
+    setRuns((prev) => prev.filter((r) => r.id !== id));
+    if (expandedRunId === id) {
+      setExpandedRunId(null);
+    }
+
     await deleteExperimentRun(id);
     const { runs: refreshed } = await getExperimentRuns();
     setRuns(refreshed);
-    if (expandedRunId === id) {
-      setExpandedRunId(refreshed.length > 0 ? refreshed[0].id : null);
+    if (expandedRunId === id && refreshed.length > 0) {
+      setExpandedRunId(refreshed[0].id);
     }
   };
 
@@ -128,8 +133,6 @@ export default function DashboardPage() {
     setRuns(refreshed);
     setExpandedRunId(newRun.id);
     setActiveTab('directory');
-    const nextId = await getNextExperimentId();
-    setNextExpId(nextId);
   };
 
   return (
@@ -149,6 +152,7 @@ export default function DashboardPage() {
             onToggleExpand={handleToggleExpand}
             onNewRun={() => setActiveTab('config')}
             onDeleteRun={handleDeleteRun}
+            nextExpId={nextExpId}
           />
         )}
 

@@ -31,6 +31,7 @@ interface RunsDirectoryProps {
   onToggleExpand: (id: string) => void;
   onNewRun: () => void;
   onDeleteRun: (id: string) => void;
+  nextExpId?: string;
 }
 
 export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
@@ -39,6 +40,7 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
   onToggleExpand,
   onNewRun,
   onDeleteRun,
+  nextExpId,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSubTab, setActiveSubTab] = useState<'outputs' | 'config' | 'dqi' | 'files'>('outputs');
@@ -164,7 +166,7 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 px-5 py-3 text-sm font-bold text-white shadow-xs hover:bg-neutral-800 transition-colors shrink-0"
           >
             <Play className="h-4 w-4 fill-current" />
-            <span>Configure & Run New</span>
+            <span>Configure & Run New {nextExpId ? `(${nextExpId})` : ''}</span>
           </button>
         </div>
 

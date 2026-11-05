@@ -232,13 +232,12 @@ export async function deleteExperimentRun(id: string): Promise<{ success: boolea
 }
 
 /**
- * Compute the next directory ID like 'exp001', 'exp002' based on existing runs.
+ * Compute the next directory ID like 'exp001', 'exp002' dynamically based on existing runs array.
  */
-export async function getNextExperimentId(): Promise<string> {
-  const { runs } = await getExperimentRuns();
+export function computeNextExperimentId(runs: ExperimentRun[]): string {
   const expIndices: number[] = [];
 
-  for (const r of runs) {
+  for (const r of runs || []) {
     if (r.id && r.id.startsWith('exp')) {
       const numPart = r.id.substring(3);
       if (/^\d+$/.test(numPart)) {
@@ -250,5 +249,13 @@ export async function getNextExperimentId(): Promise<string> {
   const maxIndex = expIndices.length > 0 ? Math.max(...expIndices) : -1;
   const nextNum = maxIndex + 1;
   return `exp${String(nextNum).padStart(3, '0')}`;
+}
+
+/**
+ * Compute the next directory ID like 'exp001', 'exp002' based on existing runs.
+ */
+export async function getNextExperimentId(): Promise<string> {
+  const { runs } = await getExperimentRuns();
+  return computeNextExperimentId(runs);
 }
 
