@@ -49,8 +49,36 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
   const [errorDetails, setErrorDetails] = useState<DiagnosticError | null>(null);
   const [copiedDiagnostic, setCopiedDiagnostic] = useState<boolean>(false);
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
 
+  const displayRunId = activeRunId || targetExpId;
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const resetState = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setStatus('idle');
+    setStage('Ready to launch');
+    setPercent(0);
+    setLogs([]);
+    setLiveTurns([]);
+    setCompletedRun(null);
+    setErrorMessage(null);
+    setErrorDetails(null);
+    setCopiedDiagnostic(false);
+    setShowExitConfirm(false);
+    setActiveRunId(null);
+  };
+
+  // Automatically reset runner state whenever the modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      resetState();
+    }
+  }, [isOpen]);
 
   const copyErrorDiagnostics = (details: DiagnosticError) => {
     navigator.clipboard.writeText(JSON.stringify(details, null, 2));
@@ -69,7 +97,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
         if (showExitConfirm) {
           setShowExitConfirm(false);
         } else if (isOpen) {
-          setShowExitConfirm(true);
+          handleRequestClose();
         }
       }
     };
@@ -77,14 +105,25 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isOpen, showExitConfirm]);
+  }, [isOpen, showExitConfirm, status]);
 
   const handleRequestClose = () => {
-    setShowExitConfirm(true);
+    if (status === 'running') {
+      setShowExitConfirm(true);
+    } else {
+      resetState();
+      onClose();
+    }
   };
 
   const startSimulation = async () => {
+    // Abort any existing running request
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setStatus('running');
+    setActiveRunId(targetExpId);
     setLogs([]);
     setLiveTurns([]);
     setCompletedRun(null);
@@ -97,6 +136,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
       const response = await fetch('/api/run-experiment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           config,
           runId: targetExpId,
@@ -194,6 +234,9 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
         }
       }
     } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        return;
+      }
       setStatus('error');
       const details = categorizeSimulationError(
         err?.message || 'Network error running simulation.',
@@ -201,19 +244,28 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
       );
       setErrorDetails(details);
       setErrorMessage(details.reason || details.raw);
+    } finally {
+      abortControllerRef.current = null;
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/60 backdrop-blur-xs p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/60 backdrop-blur-xs p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          handleRequestClose();
+        }
+      }}
+    >
       <div className="relative flex flex-col h-[85vh] w-full max-w-4xl rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4 bg-neutral-50/70">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-900 text-white font-mono text-xs font-bold">
-              {targetExpId}
+              {displayRunId}
             </div>
             <div>
               <h3 className="text-sm font-bold text-neutral-900">
@@ -395,6 +447,15 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
                   <span>Retry Simulation</span>
                 </button>
 
+                <button
+                  type="button"
+                  onClick={resetState}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-3.5 py-2 text-xs font-semibold text-neutral-700 shadow-2xs hover:bg-neutral-50 transition-colors"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 text-neutral-500" />
+                  <span>Reset Runner</span>
+                </button>
+
                 {onOpenApiSettings && (errorDetails?.category === 'auth' || errorDetails?.category === 'rate_limit' || errorDetails?.category === 'network') && (
                   <button
                     type="button"
@@ -427,7 +488,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
                 <div className="mt-2.5 pt-2 border-t border-neutral-100 font-mono text-[11px] text-neutral-700 space-y-1 overflow-x-auto">
                   <div><strong>Error String:</strong> {errorDetails?.raw || errorMessage}</div>
                   {errorDetails?.status && <div><strong>Status Code:</strong> {errorDetails.status}</div>}
-                  <div><strong>Target Run:</strong> {targetExpId}</div>
+                  <div><strong>Target Run:</strong> {displayRunId}</div>
                   <div><strong>Model Assignment:</strong> {config.model_config.model_assignments['MOE Official'] || 'Llama-3.3-70B'}</div>
                 </div>
               </details>
@@ -487,10 +548,22 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-neutral-200 bg-neutral-50 px-6 py-3.5">
           <div className="flex items-center gap-2 text-xs font-mono text-neutral-500">
-            <span>Directory Target: <strong>{targetExpId}</strong></span>
+            <span>Directory Target: <strong>{displayRunId}</strong></span>
           </div>
 
           <div className="flex items-center gap-2">
+            {status !== 'idle' && (
+              <button
+                type="button"
+                onClick={resetState}
+                disabled={status === 'running'}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 disabled:pointer-events-none shadow-2xs transition-colors"
+                title="Reset runner state to ready launch screen"
+              >
+                <RotateCcw className="h-3.5 w-3.5 text-neutral-400" />
+                <span>Reset Runner</span>
+              </button>
+            )}
             {status === 'running' && (
               <span className="text-xs text-neutral-500 font-mono animate-pulse">
                 Deliberating in progress...
@@ -499,6 +572,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
             {status === 'completed' && completedRun && (
               <button
                 onClick={() => {
+                  resetState();
                   onClose();
                 }}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-neutral-800 transition-colors"
@@ -555,7 +629,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
               <div className="rounded-xl bg-neutral-50 p-3.5 border border-neutral-100 text-xs text-neutral-600 leading-relaxed">
                 {status === 'running' ? (
                   <>
-                    Deliberation trial <strong>{targetExpId}</strong> is currently executing (
+                    Deliberation trial <strong>{displayRunId}</strong> is currently executing (
                     <strong className="text-neutral-950 font-mono">{percent}%</strong> complete).
                     Closing now will disconnect your view from the live event stream.
                   </>
@@ -577,6 +651,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
                 <button
                   type="button"
                   onClick={() => {
+                    resetState();
                     setShowExitConfirm(false);
                     onClose();
                   }}
