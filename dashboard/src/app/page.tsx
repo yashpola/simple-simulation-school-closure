@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { RunsDirectory } from '@/components/RunsDirectory';
-import { RunInspector } from '@/components/RunInspector';
 import { ConfigEditor } from '@/components/ConfigEditor';
 import { LiveSimulationRunner } from '@/components/LiveSimulationRunner';
 import { SupabaseGuideModal } from '@/components/SupabaseGuideModal';
 import { ApiSettingsModal, ApiSettings, PROVIDER_PRESETS } from '@/components/ApiSettingsModal';
+import { FloatingFooter } from '@/components/FloatingFooter';
 import {
   getExperimentRuns,
   deleteExperimentRun,
@@ -22,8 +22,8 @@ const API_SETTINGS_STORAGE_KEY = 'deliberation_byok_settings';
 
 export default function DashboardPage() {
   const [runs, setRuns] = useState<ExperimentRun[]>([SAMPLE_EXP000]);
-  const [selectedRunId, setSelectedRunId] = useState<string>('exp000');
-  const [activeTab, setActiveTab] = useState<'directory' | 'inspector' | 'config' | 'setup'>('directory');
+  const [expandedRunId, setExpandedRunId] = useState<string | null>('exp000');
+  const [activeTab, setActiveTab] = useState<'directory' | 'config'>('directory');
   const [config, setConfig] = useState<ExperimentConfig>(DEFAULT_CONFIG);
   const [nextExpId, setNextExpId] = useState<string>('exp001');
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false);
@@ -68,7 +68,7 @@ export default function DashboardPage() {
       setRuns(loadedRuns);
 
       if (loadedRuns.length > 0) {
-        setSelectedRunId(loadedRuns[0].id);
+        setExpandedRunId(loadedRuns[0].id);
       }
 
       const nextId = await getNextExperimentId();
@@ -113,17 +113,16 @@ export default function DashboardPage() {
     }
   };
 
-  const handleSelectRun = (id: string) => {
-    setSelectedRunId(id);
-    setActiveTab('inspector');
+  const handleToggleExpand = (id: string) => {
+    setExpandedRunId((prev) => (prev === id ? null : id));
   };
 
   const handleDeleteRun = async (id: string) => {
     await deleteExperimentRun(id);
     const { runs: refreshed } = await getExperimentRuns();
     setRuns(refreshed);
-    if (selectedRunId === id && refreshed.length > 0) {
-      setSelectedRunId(refreshed[0].id);
+    if (expandedRunId === id) {
+      setExpandedRunId(refreshed.length > 0 ? refreshed[0].id : null);
     }
   };
 
@@ -131,41 +130,31 @@ export default function DashboardPage() {
     await saveExperimentRun(newRun);
     const { runs: refreshed } = await getExperimentRuns();
     setRuns(refreshed);
-    setSelectedRunId(newRun.id);
-    setActiveTab('inspector');
+    setExpandedRunId(newRun.id);
+    setActiveTab('directory');
     const nextId = await getNextExperimentId();
     setNextExpId(nextId);
   };
-
-  const selectedRun = runs.find((r) => r.id === selectedRunId) || runs[0] || SAMPLE_EXP000;
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50/60 text-neutral-900">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        selectedRunId={selectedRunId}
         supabaseConnected={supabaseConnected}
         onOpenSetup={() => setIsSetupOpen(true)}
         apiSettings={apiSettings}
         onOpenApiSettings={() => setIsApiSettingsOpen(true)}
       />
 
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-8 pb-28">
         {activeTab === 'directory' && (
           <RunsDirectory
             runs={runs}
-            selectedRunId={selectedRunId}
-            onSelectRun={handleSelectRun}
+            expandedRunId={expandedRunId}
+            onToggleExpand={handleToggleExpand}
             onNewRun={() => setActiveTab('config')}
             onDeleteRun={handleDeleteRun}
-          />
-        )}
-
-        {activeTab === 'inspector' && (
-          <RunInspector
-            run={selectedRun}
-            onBackToDirectory={() => setActiveTab('directory')}
           />
         )}
 
@@ -180,6 +169,9 @@ export default function DashboardPage() {
           />
         )}
       </main>
+
+      {/* Floating Resources Dock */}
+      <FloatingFooter />
 
       {/* Live Simulation Runner Modal */}
       <LiveSimulationRunner

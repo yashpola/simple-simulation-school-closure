@@ -153,7 +153,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
                 School Closure Deliberation Live Runner
               </h3>
               <p className="text-[11px] text-neutral-500 font-mono">
-                System 1 (Control) vs System 2 (Treatment Reflection Scratchpad)
+                Standard Deliberation vs Reflective Deliberation
               </p>
             </div>
           </div>
@@ -200,7 +200,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
                   Ready to launch target run: {targetExpId}
                 </h4>
                 <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
-                  This will generate pre-stances, run {config.deliberation_config.max_turns_per_agent} rounds for both Control and Treatment with internal reflection scratchpads, score discourse with the DQI Judge, and persist the artifacts to Supabase.
+                  This will generate pre-stances, run {config.deliberation_config.max_turns_per_agent} rounds for both Standard and Reflective Deliberation conditions, score discourse quality with the DQI Judge, and persist the artifacts to Supabase.
                 </p>
               </div>
               <button
@@ -248,7 +248,7 @@ export const LiveSimulationRunner: React.FC<LiveSimulationRunnerProps> = ({
                         : 'bg-neutral-100 text-neutral-700'
                     }`}
                   >
-                    {item.run} · Round {item.round}
+                    {item.run === 'Treatment' ? 'Reflective' : 'Standard'} · Round {item.round}
                   </span>
                   <span className="font-semibold text-neutral-900">
                     {item.entry.agent}

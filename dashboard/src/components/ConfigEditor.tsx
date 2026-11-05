@@ -15,7 +15,9 @@ import {
   Users,
   Key,
   Sliders,
-  ExternalLink
+  Sparkles,
+  MessageSquare,
+  Brain
 } from 'lucide-react';
 
 interface ConfigEditorProps {
@@ -90,7 +92,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
   };
 
   const resetToDefault = () => {
-    if (confirm('Reset all parameters to default config.json values?')) {
+    if (confirm('Reset all parameters to default experiment values?')) {
       onChangeConfig(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
     }
   };
@@ -100,7 +102,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'config.json';
+    a.download = 'experiment_config.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -118,7 +120,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
           onChangeConfig(parsed);
           alert('Config imported successfully!');
         } else {
-          alert('Invalid config.json format.');
+          alert('Invalid configuration format.');
         }
       } catch {
         alert('Failed to parse JSON file.');
@@ -138,29 +140,29 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white p-6 sm:p-7 shadow-xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="rounded bg-neutral-100 px-2 py-0.5 font-mono text-[11px] font-bold text-neutral-800">
-              config.json Studio
+            <span className="rounded-md bg-neutral-100 px-2.5 py-1 font-mono text-xs font-bold text-neutral-800">
+              Experiment Setup & Parameters
             </span>
-            <span className="text-xs text-neutral-400 font-mono">
-              Target ID: <strong className="text-neutral-900">{nextExpId}</strong>
+            <span className="text-xs text-neutral-500 font-mono">
+              Target Run: <strong className="text-neutral-900">{nextExpId}</strong>
             </span>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-900 mt-1">
-            Experiment Configuration & Runner
+          <h2 className="text-2xl font-bold tracking-tight text-neutral-900 mt-2">
+            Configure Deliberation Simulation
           </h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            Configure agent models, sampling temperatures, deliberation turn budget, and prompts.
+          <p className="text-sm text-neutral-600 mt-1">
+            Customize agent models, sampling temperatures, conversational turn budgets, and prompts for this experiment.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={resetToDefault}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs"
-            title="Reset to default config.json"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-3.5 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 shadow-2xs"
+            title="Reset to default experiment values"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>Reset</span>
@@ -168,14 +170,14 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
 
           <button
             onClick={exportConfigJson}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs"
-            title="Download config.json"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-3.5 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 shadow-2xs"
+            title="Export configuration"
           >
             <Download className="h-3.5 w-3.5" />
             <span>Export</span>
           </button>
 
-          <label className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs cursor-pointer">
+          <label className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-3.5 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 shadow-2xs cursor-pointer">
             <Upload className="h-3.5 w-3.5" />
             <span>Import</span>
             <input type="file" accept=".json" onChange={handleImportJson} className="hidden" />
@@ -183,116 +185,116 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
 
           <button
             onClick={handleRunClick}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold shadow-xs transition-colors ${
+            className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold shadow-xs transition-colors ${
               hasApiKey
                 ? 'bg-neutral-900 text-white hover:bg-neutral-800'
                 : 'bg-amber-600 text-white hover:bg-amber-700'
             }`}
           >
-            {hasApiKey ? <Play className="h-3.5 w-3.5 fill-current" /> : <Key className="h-3.5 w-3.5" />}
+            {hasApiKey ? <Play className="h-4 w-4 fill-current" /> : <Key className="h-4 w-4" />}
             <span>{hasApiKey ? `Run Experiment (${nextExpId})` : 'Set Key & Run'}</span>
           </button>
         </div>
       </div>
 
       {/* API Key BYOK Banner / Status */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 text-xs">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-sm">
+        <div className="flex items-center gap-3.5">
           <div
-            className={`flex h-8 w-8 items-center justify-center rounded-lg border shrink-0 ${
-              hasApiKey ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'
+            className={`flex h-10 w-10 items-center justify-center rounded-xl border shrink-0 ${
+              hasApiKey ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'
             }`}
           >
-            <Key className="h-4 w-4" />
+            <Key className="h-5 w-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-neutral-900">
+              <span className="font-bold text-neutral-900">
                 Active Provider: {currentPreset.name}
               </span>
-              <span className="font-mono text-[10px] text-neutral-400">
+              <span className="font-mono text-xs text-neutral-500">
                 ({apiSettings.baseUrl})
               </span>
             </div>
-            <p className="text-[11px] text-neutral-500 mt-0.5">
+            <p className="text-xs text-neutral-600 mt-0.5">
               {hasApiKey
-                ? 'Your custom API key is loaded locally in this browser. Compute will be billed to your own account.'
-                : 'No API key set. Add your Together AI, OpenAI, Groq, or OpenRouter key to run simulations.'}
+                ? 'Your custom API key is loaded locally in this browser. Compute is billed directly to your provider account.'
+                : 'No API key configured. Provide your Together AI, OpenAI, Groq, or OpenRouter key to launch runs.'}
             </p>
           </div>
         </div>
 
         <button
           onClick={onOpenApiSettings}
-          className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-lg border border-neutral-200 bg-white px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs"
+          className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl border border-neutral-300 bg-white px-4 py-2 font-semibold text-neutral-800 hover:bg-neutral-50 shadow-2xs text-xs"
         >
           <span>{hasApiKey ? 'Change Key / Provider' : 'Enter API Key'}</span>
         </button>
       </div>
 
       {/* Configuration Section Tabs */}
-      <div className="flex items-center gap-2 border-b border-neutral-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-neutral-200 pb-3">
         <button
           onClick={() => setActiveSection('deliberation')}
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
             activeSection === 'deliberation'
-              ? 'bg-neutral-900 text-white'
+              ? 'bg-neutral-900 text-white shadow-xs'
               : 'text-neutral-600 hover:bg-neutral-100'
           }`}
         >
-          <Sliders className="h-3.5 w-3.5" />
+          <Sliders className="h-4 w-4" />
           <span>Deliberation Protocol</span>
         </button>
 
         <button
           onClick={() => setActiveSection('models')}
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
             activeSection === 'models'
-              ? 'bg-neutral-900 text-white'
+              ? 'bg-neutral-900 text-white shadow-xs'
               : 'text-neutral-600 hover:bg-neutral-100'
           }`}
         >
-          <Cpu className="h-3.5 w-3.5" />
+          <Cpu className="h-4 w-4" />
           <span>Models & Parameters</span>
         </button>
 
         <button
           onClick={() => setActiveSection('prompts')}
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
             activeSection === 'prompts'
-              ? 'bg-neutral-900 text-white'
+              ? 'bg-neutral-900 text-white shadow-xs'
               : 'text-neutral-600 hover:bg-neutral-100'
           }`}
         >
-          <FileText className="h-3.5 w-3.5" />
+          <FileText className="h-4 w-4" />
           <span>Topic & Prompts</span>
         </button>
 
         <button
           onClick={() => setActiveSection('personas')}
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
             activeSection === 'personas'
-              ? 'bg-neutral-900 text-white'
+              ? 'bg-neutral-900 text-white shadow-xs'
               : 'text-neutral-600 hover:bg-neutral-100'
           }`}
         >
-          <Users className="h-3.5 w-3.5" />
+          <Users className="h-4 w-4" />
           <span>Personas ({config.system_prompts.personas.length})</span>
         </button>
       </div>
 
-      {/* Tab: Deliberation Protocol */}
+      {/* Tab 1: Deliberation Protocol */}
       {activeSection === 'deliberation' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs space-y-4">
-            <h3 className="text-sm font-semibold text-neutral-900">
-              Dialogue Turns & Matrix
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-5">
+            <h3 className="text-base font-bold text-neutral-950">
+              Dialogue Turns & Evaluation Matrix
             </h3>
 
             <div>
-              <label className="text-xs font-medium text-neutral-700 block">
+              <label className="text-sm font-semibold text-neutral-800 block">
                 Max Turns Per Agent (Rounds):{' '}
-                <span className="font-mono font-bold text-neutral-900">
+                <span className="font-mono font-bold text-neutral-950">
                   {config.deliberation_config.max_turns_per_agent}
                 </span>
               </label>
@@ -305,13 +307,13 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                 onChange={(e) => updateDeliberationConfig('max_turns_per_agent', parseInt(e.target.value, 10))}
                 className="w-full mt-2"
               />
-              <p className="text-[11px] text-neutral-400 mt-1">
-                Each round generates 1 turn per persona. E.g. 3 rounds = 6 conversational turns total.
+              <p className="text-xs text-neutral-500 mt-1">
+                Each round generates 1 turn per persona. (e.g. 3 rounds = 6 dialogue turns total).
               </p>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-neutral-700 block">
+              <label className="text-sm font-semibold text-neutral-800 block">
                 Total Trials:
               </label>
               <input
@@ -320,23 +322,23 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                 max={5}
                 value={config.deliberation_config.total_trials}
                 onChange={(e) => updateDeliberationConfig('total_trials', parseInt(e.target.value, 10))}
-                className="w-24 mt-1 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-mono"
+                className="w-28 mt-1.5 rounded-lg border border-neutral-300 px-3 py-2 text-sm font-mono font-semibold"
               />
             </div>
 
             <div>
-              <label className="text-xs font-medium text-neutral-700 block mb-2">
+              <label className="text-sm font-semibold text-neutral-800 block mb-2.5">
                 Evaluation Metrics Enabled:
               </label>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {[
-                  { id: 'cosine_similarity', label: 'Cosine Similarity (Consensus & Self-Shift)' },
-                  { id: 'covd', label: 'CovD (Plurality Gram Matrix Determinant)' },
-                  { id: 'dqi', label: 'DQI (Discourse Quality Index LLM-as-a-Judge)' },
+                  { id: 'cosine_similarity', label: 'Consensus (Convergence) & Stance Change (Self-Shift)' },
+                  { id: 'covd', label: 'Plurality of Opinion (Gram Matrix CovD Determinant)' },
+                  { id: 'dqi', label: 'Discourse Quality Index (DQI LLM-as-a-Judge 5-Criteria Rubric)' },
                 ].map((m) => {
                   const isChecked = config.deliberation_config.eval_metrics.includes(m.id);
                   return (
-                    <label key={m.id} className="flex items-center gap-2 text-xs text-neutral-700 cursor-pointer">
+                    <label key={m.id} className="flex items-center gap-2.5 text-sm text-neutral-800 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={isChecked}
@@ -347,7 +349,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                             : current.filter((x) => x !== m.id);
                           updateDeliberationConfig('eval_metrics', next);
                         }}
-                        className="rounded border-neutral-300"
+                        className="rounded border-neutral-300 h-4 w-4"
                       />
                       <span>{m.label}</span>
                     </label>
@@ -357,18 +359,23 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
             </div>
           </div>
 
-          {/* System 1 vs System 2 Prompt Addition Configuration */}
-          <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs space-y-4">
-            <h3 className="text-sm font-semibold text-neutral-900">
-              Run Configurations (System 1 vs System 2)
+          {/* Deliberation Conditions Compared (Human-friendly labels, no code-specific variable names) */}
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-5">
+            <h3 className="text-base font-bold text-neutral-950">
+              Deliberation Conditions Compared
             </h3>
 
-            {/* Run A (Control) */}
-            <div className="rounded-lg border border-neutral-200 bg-neutral-50/50 p-3 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-neutral-800">Control (run_A_control)</span>
-                <span className="font-mono text-[10px] text-neutral-500">extract_tags: false</span>
+            {/* Condition 1: Standard Deliberation */}
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-blue-600" />
+                <span className="font-bold text-sm text-neutral-900">
+                  Condition 1: Standard Deliberation
+                </span>
               </div>
+              <p className="text-xs text-neutral-500">
+                Direct dialogue where agents reply directly in persona to previous arguments.
+              </p>
               <textarea
                 value={config.deliberation_config.runs[0]?.system_prompt_addition || ''}
                 onChange={(e) => {
@@ -377,16 +384,21 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                   updateDeliberationConfig('runs', runs);
                 }}
                 rows={2}
-                className="w-full rounded-md border border-neutral-200 bg-white p-2 text-xs font-mono text-neutral-700"
+                className="w-full rounded-lg border border-neutral-300 bg-white p-2.5 text-xs text-neutral-800 leading-relaxed font-sans"
               />
             </div>
 
-            {/* Run B (Treatment) */}
-            <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-amber-900">Treatment (run_B_treatment)</span>
-                <span className="font-mono text-[10px] text-amber-700 font-bold">extract_tags: true</span>
+            {/* Condition 2: Reflective Deliberation */}
+            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Brain className="h-4 w-4 text-amber-700" />
+                <span className="font-bold text-sm text-amber-950">
+                  Condition 2: Reflective Deliberation
+                </span>
               </div>
+              <p className="text-xs text-amber-900">
+                Requires agents to write an internal reflection scratchpad before stating their public response.
+              </p>
               <textarea
                 value={config.deliberation_config.runs[1]?.system_prompt_addition || ''}
                 onChange={(e) => {
@@ -395,32 +407,32 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                   updateDeliberationConfig('runs', runs);
                 }}
                 rows={4}
-                className="w-full rounded-md border border-amber-200 bg-white p-2 text-xs font-mono text-neutral-800"
+                className="w-full rounded-lg border border-amber-300 bg-white p-2.5 text-xs text-neutral-800 leading-relaxed font-sans"
               />
             </div>
           </div>
         </div>
       )}
 
-      {/* Tab: Models & Parameters */}
+      {/* Tab 2: Models & Parameters */}
       {activeSection === 'models' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs space-y-4">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-5">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-neutral-900">
+              <h3 className="text-base font-bold text-neutral-950">
                 Model Assignments
               </h3>
-              <div className="text-[11px] text-neutral-400 font-mono">
+              <div className="text-xs text-neutral-500 font-mono font-medium">
                 Provider: {currentPreset.name}
               </div>
             </div>
 
             {/* Quick suggested models for active provider */}
-            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-2.5 space-y-1.5">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-500 font-semibold block">
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-2">
+              <span className="text-xs font-bold text-neutral-700 block">
                 Quick Apply Model from {currentPreset.name}:
               </span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {currentPreset.suggestedModels.map((m) => (
                   <button
                     key={m}
@@ -432,7 +444,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                         DQI_Judge: m,
                       });
                     }}
-                    className="rounded border border-neutral-200 bg-white px-2 py-0.5 text-[10px] font-mono text-neutral-700 hover:border-neutral-900 hover:text-neutral-900 shadow-2xs"
+                    className="rounded-lg border border-neutral-300 bg-white px-2.5 py-1 text-xs font-mono font-medium text-neutral-800 hover:border-neutral-900 hover:text-neutral-950 shadow-2xs"
                   >
                     Apply {m.split('/').pop()} to all
                   </button>
@@ -442,7 +454,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
 
             {['MOE Official', 'Teacher', 'DQI_Judge'].map((roleKey) => (
               <div key={roleKey}>
-                <label className="text-xs font-medium text-neutral-700 block">
+                <label className="text-sm font-semibold text-neutral-800 block">
                   {roleKey}:
                 </label>
                 <input
@@ -452,21 +464,21 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                     const assignments = { ...config.model_config.model_assignments, [roleKey]: e.target.value };
                     updateModelConfig('model_assignments', assignments);
                   }}
-                  className="w-full mt-1 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-mono"
+                  className="w-full mt-1.5 rounded-lg border border-neutral-300 px-3.5 py-2 text-sm font-mono text-neutral-900 shadow-2xs"
                 />
               </div>
             ))}
           </div>
 
-          <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs space-y-4">
-            <h3 className="text-sm font-semibold text-neutral-900">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-5">
+            <h3 className="text-base font-bold text-neutral-950">
               Sampling Hyperparameters
             </h3>
 
             <div>
-              <label className="text-xs font-medium text-neutral-700 block">
+              <label className="text-sm font-semibold text-neutral-800 block">
                 Agent Temperature:{' '}
-                <span className="font-mono font-bold text-neutral-900">
+                <span className="font-mono font-bold text-neutral-950">
                   {config.model_config.model_parameters.agent_temperature}
                 </span>
               </label>
@@ -482,9 +494,9 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
             </div>
 
             <div>
-              <label className="text-xs font-medium text-neutral-700 block">
+              <label className="text-sm font-semibold text-neutral-800 block">
                 Judge Temperature:{' '}
-                <span className="font-mono font-bold text-neutral-900">
+                <span className="font-mono font-bold text-neutral-950">
                   {config.model_config.model_parameters.judge_temperature}
                 </span>
               </label>
@@ -497,13 +509,13 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                 onChange={(e) => updateModelParams('judge_temperature', parseFloat(e.target.value))}
                 className="w-full mt-2"
               />
-              <p className="text-[10px] text-neutral-400 mt-1">
-                Low temperature ensures reproducible, consistent DQI rubric scoring.
+              <p className="text-xs text-neutral-500 mt-1">
+                Low temperature ensures reproducible, consistent scoring across the DQI rubric.
               </p>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-neutral-700 block">
+              <label className="text-sm font-semibold text-neutral-800 block">
                 Random Seed:
               </label>
               <input
@@ -511,109 +523,109 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                 placeholder="None or integer (e.g. 42)"
                 value={config.model_config.model_parameters.seed ?? 'None'}
                 onChange={(e) => updateModelParams('seed', e.target.value === 'None' ? 'None' : e.target.value)}
-                className="w-full mt-1 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-mono"
+                className="w-full mt-1.5 rounded-lg border border-neutral-300 px-3.5 py-2 text-sm font-mono shadow-2xs"
               />
             </div>
           </div>
         </div>
       )}
 
-      {/* Tab: Topic & Prompts */}
+      {/* Tab 3: Topic & Prompts */}
       {activeSection === 'prompts' && (
-        <div className="space-y-4">
-          <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs space-y-4">
-            <h3 className="text-sm font-semibold text-neutral-900">
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-3">
+            <h3 className="text-base font-bold text-neutral-950">
               Topic Prompt
             </h3>
             <textarea
               value={config.system_prompts.topic_prompt}
               onChange={(e) => updateSystemPrompts('topic_prompt', e.target.value)}
               rows={4}
-              className="w-full rounded-md border border-neutral-200 p-3 text-xs font-sans text-neutral-800 leading-relaxed"
+              className="w-full rounded-xl border border-neutral-300 p-3.5 text-sm text-neutral-800 leading-relaxed shadow-2xs"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs space-y-2">
-              <h4 className="text-xs font-semibold text-neutral-900">
-                Pre-Stance Prompt
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-2.5">
+              <h4 className="text-sm font-bold text-neutral-950">
+                Pre-Stance Prompt (Initial Stance)
               </h4>
               <textarea
                 value={config.system_prompts.pre_stance_prompt}
                 onChange={(e) => updateSystemPrompts('pre_stance_prompt', e.target.value)}
                 rows={2}
-                className="w-full rounded-md border border-neutral-200 p-2 text-xs font-mono text-neutral-800"
+                className="w-full rounded-xl border border-neutral-300 p-3 text-sm text-neutral-800 shadow-2xs"
               />
             </div>
 
-            <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs space-y-2">
-              <h4 className="text-xs font-semibold text-neutral-900">
-                Post-Stance Prompt
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-2.5">
+              <h4 className="text-sm font-bold text-neutral-950">
+                Post-Stance Prompt (Final Stance)
               </h4>
               <textarea
                 value={config.system_prompts.post_stance_prompt}
                 onChange={(e) => updateSystemPrompts('post_stance_prompt', e.target.value)}
                 rows={2}
-                className="w-full rounded-md border border-neutral-200 p-2 text-xs font-mono text-neutral-800"
+                className="w-full rounded-xl border border-neutral-300 p-3 text-sm text-neutral-800 shadow-2xs"
               />
             </div>
           </div>
 
-          <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs space-y-2">
-            <h4 className="text-xs font-semibold text-neutral-900">
-              DQI Judge Prompt (5 Rubric Dimensions)
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-2.5">
+            <h4 className="text-sm font-bold text-neutral-950">
+              DQI Judge Prompt (5-Criteria Rubric)
             </h4>
             <textarea
               value={config.system_prompts.dqi_judge_prompt}
               onChange={(e) => updateSystemPrompts('dqi_judge_prompt', e.target.value)}
               rows={8}
-              className="w-full rounded-md border border-neutral-200 p-3 text-xs font-mono text-neutral-800 leading-relaxed"
+              className="w-full rounded-xl border border-neutral-300 p-3.5 text-xs font-mono text-neutral-800 leading-relaxed shadow-2xs"
             />
           </div>
         </div>
       )}
 
-      {/* Tab: Personas */}
+      {/* Tab 4: Personas */}
       {activeSection === 'personas' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {config.system_prompts.personas.map((persona, idx) => (
-            <div key={idx} className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3">
+            <div key={idx} className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold text-neutral-900">
+                <span className="font-mono text-sm font-bold text-neutral-900">
                   Persona #{idx + 1}
                 </span>
-                <span className="rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-mono text-neutral-600">
+                <span className="rounded-md bg-neutral-100 px-2.5 py-1 text-xs font-mono font-medium text-neutral-700">
                   {persona.id}
                 </span>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-neutral-700 block">ID:</label>
+                <label className="text-sm font-semibold text-neutral-800 block">Persona Identifier:</label>
                 <input
                   type="text"
                   value={persona.id}
                   onChange={(e) => updatePersona(idx, { id: e.target.value })}
-                  className="w-full mt-1 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-mono"
+                  className="w-full mt-1.5 rounded-lg border border-neutral-300 px-3.5 py-2 text-sm font-mono shadow-2xs"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-neutral-700 block">Role Title:</label>
+                <label className="text-sm font-semibold text-neutral-800 block">Role Title:</label>
                 <input
                   type="text"
                   value={persona.role}
                   onChange={(e) => updatePersona(idx, { role: e.target.value })}
-                  className="w-full mt-1 rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-sans"
+                  className="w-full mt-1.5 rounded-lg border border-neutral-300 px-3.5 py-2 text-sm shadow-2xs"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-neutral-700 block">System Description / Persona Stance:</label>
+                <label className="text-sm font-semibold text-neutral-800 block">Persona Background & Stance:</label>
                 <textarea
                   value={persona.description}
                   onChange={(e) => updatePersona(idx, { description: e.target.value })}
                   rows={4}
-                  className="w-full mt-1 rounded-md border border-neutral-200 p-2 text-xs font-sans leading-relaxed"
+                  className="w-full mt-1.5 rounded-xl border border-neutral-300 p-3 text-sm text-neutral-800 leading-relaxed shadow-2xs"
                 />
               </div>
             </div>

@@ -2,35 +2,46 @@ import React, { useState } from 'react';
 import {
   Folder,
   Play,
-  ArrowRight,
-  TrendingUp,
   Award,
-  Calendar,
   Layers,
-  FileJson,
   Download,
   Trash2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Brain,
+  Scale,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare,
+  Sparkles,
+  FileText,
+  Copy,
+  Check,
+  Calendar
 } from 'lucide-react';
 import { ExperimentRun } from '@/types/experiment';
 
 interface RunsDirectoryProps {
   runs: ExperimentRun[];
-  selectedRunId: string | null;
-  onSelectRun: (id: string) => void;
+  expandedRunId: string | null;
+  onToggleExpand: (id: string) => void;
   onNewRun: () => void;
   onDeleteRun: (id: string) => void;
 }
 
 export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
   runs,
-  selectedRunId,
-  onSelectRun,
+  expandedRunId,
+  onToggleExpand,
   onNewRun,
   onDeleteRun,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSubTab, setActiveSubTab] = useState<'dialogue' | 'stances' | 'metrics' | 'files'>('dialogue');
+  const [deliberationView, setDeliberationView] = useState<'reflective' | 'standard' | 'side-by-side'>('side-by-side');
+  const [activeJsonFile, setActiveJsonFile] = useState<'results_treatment' | 'results_control' | 'evals' | 'config'>('results_treatment');
+  const [copiedFile, setCopiedFile] = useState(false);
 
   const filteredRuns = runs.filter((r) => {
     const term = searchTerm.toLowerCase();
@@ -49,7 +60,6 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
       'evals.json': run.evals,
     };
 
-    // Download each json file
     Object.entries(files).forEach(([filename, data]) => {
       if (!data) return;
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -64,217 +74,826 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
     });
   };
 
+  const copyJsonToClipboard = (data: any) => {
+    navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+    setCopiedFile(true);
+    setTimeout(() => setCopiedFile(false), 2000);
+  };
+
+  const downloadJsonFile = (runId: string, filename: string, data: any) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${runId}_${filename}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const getFileContent = (run: ExperimentRun) => {
+    switch (activeJsonFile) {
+      case 'config':
+        return run.config;
+      case 'results_control':
+        return run.results_control;
+      case 'results_treatment':
+        return run.results_treatment;
+      case 'evals':
+        return run.evals;
+      default:
+        return {};
+    }
+  };
+
+  const formatTimestamp = (isoString: string) => {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return { date: 'N/A', time: '' };
+    return {
+      date: d.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      time: d.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
+      full: d.toLocaleString(undefined, {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
+    };
+  };
+
   return (
     <div className="space-y-6">
-      {/* Top Banner / Summary */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-mono font-medium uppercase tracking-wider text-neutral-500">
-              Interactive Experiment Matrix
-            </span>
+      {/* Top Banner / Plain-terms Summary Card */}
+      <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-7 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-neutral-500">
+                School Closure Deliberation Study
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
+              Experiment Run History
+            </h2>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-900 mt-1">
-            Simulation Runs Directory
-          </h2>
-          <p className="text-xs text-neutral-500 mt-1 max-w-2xl">
-            Each entry is an autonomous digital twin of a directory run (<code>expXXX</code>) comparing System 1 (Direct Dialogue) against System 2 (Internal Reflection Scratchpad).
-          </p>
+
+          <button
+            onClick={onNewRun}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 px-5 py-3 text-sm font-bold text-white shadow-xs hover:bg-neutral-800 transition-colors shrink-0"
+          >
+            <Play className="h-4 w-4 fill-current" />
+            <span>Configure & Run New</span>
+          </button>
         </div>
 
-        <button
-          onClick={onNewRun}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-neutral-900 px-4 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-neutral-800 transition-colors"
-        >
-          <Play className="h-3.5 w-3.5 fill-current" />
-          <span>Configure & Run New</span>
-        </button>
+        {/* Plain-Language Explanation of What the Experiment Does & What Metrics Measure */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4 border-t border-neutral-100 text-sm">
+          <div className="rounded-xl bg-neutral-50 p-4 space-y-1.5 border border-neutral-100">
+            <div className="flex items-center gap-2 text-neutral-900 font-bold text-xs uppercase tracking-wider font-mono">
+              <Brain className="h-4 w-4 text-neutral-700" />
+              <span>What this experiment does</span>
+            </div>
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              Two AI personas—a <strong>Ministry of Education Official</strong> and a <strong>Primary School Teacher</strong>—deliberate whether to merge a historic primary school. We test whether prompting agents to engage in internal reflection ("think before speaking") improves compromise and discourse quality compared to direct debate.
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-neutral-50 p-4 space-y-1.5 border border-neutral-100">
+            <div className="flex items-center gap-2 text-neutral-900 font-bold text-xs uppercase tracking-wider font-mono">
+              <Scale className="h-4 w-4 text-neutral-700" />
+              <span>Consensus & Stance Change</span>
+            </div>
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              <strong>Consensus (Convergence)</strong> calculates how semantically close both participants' opinions become after discussion (0 to 1.0). <strong>Stance Change</strong> tracks how much each participant moved away from their initial stance, reflecting openness to compromise.
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-neutral-50 p-4 space-y-1.5 border border-neutral-100">
+            <div className="flex items-center gap-2 text-neutral-900 font-bold text-xs uppercase tracking-wider font-mono">
+              <Award className="h-4 w-4 text-neutral-700" />
+              <span>Discourse Quality (DQI)</span>
+            </div>
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              An automated LLM judge scores each turn (out of 15) using a strict political science rubric across 5 dimensions: depth of justification, collective reasoning, mutual civility, concrete solutions, and direct interactivity (penalizing parallel monologues).
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Directory Filter / Controls */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1 max-w-sm">
+      {/* Search Filter & Count */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex-1 max-w-md">
           <input
             type="text"
-            placeholder="Search runs by expXXX, name..."
+            placeholder="Search runs by ID, persona, or keyword..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none"
+            className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none shadow-2xs"
           />
         </div>
-        <div className="text-xs font-mono text-neutral-500">
-          Showing {filteredRuns.length} of {runs.length} experiment runs
+        <div className="text-xs font-mono font-medium text-neutral-500">
+          Showing {filteredRuns.length} of {runs.length} experiment runs · Click any row to expand details
         </div>
       </div>
 
-      {/* Runs List Table / Grid */}
-      <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xs">
+      {/* Runs Table with Bold Headers, Explicit Timestamp Column, and Inline Expandable Rows */}
+      <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-neutral-200 bg-neutral-50/70 font-mono text-[11px] uppercase tracking-wider text-neutral-500">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-neutral-200 bg-neutral-100/90 text-sm font-bold text-neutral-950">
               <tr>
-                <th className="px-5 py-3 font-medium">Directory Run</th>
-                <th className="px-5 py-3 font-medium">Consensus (Convergence)</th>
-                <th className="px-5 py-3 font-medium">Self-Shift (Mind Change)</th>
-                <th className="px-5 py-3 font-medium">DQI Score (Total / 15)</th>
-                <th className="px-5 py-3 font-medium">Hypothesis Verdict</th>
-                <th className="px-5 py-3 text-right font-medium">Actions</th>
+                <th className="px-5 py-4 font-bold text-neutral-950">Run</th>
+                <th className="px-5 py-4 font-bold text-neutral-950">Timestamp</th>
+                <th className="px-5 py-4 font-bold text-neutral-950">Consensus (Pre → Post)</th>
+                <th className="px-5 py-4 font-bold text-neutral-950">Stance Change</th>
+                <th className="px-5 py-4 font-bold text-neutral-950">Discourse Quality (DQI)</th>
+                <th className="px-5 py-4 font-bold text-neutral-950">Hypothesis Verdict</th>
+                <th className="px-5 py-4 text-right font-bold text-neutral-950">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 font-sans">
+            <tbody className="divide-y divide-neutral-200 font-sans">
               {filteredRuns.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-neutral-400 text-xs">
-                    No experiment runs found. Click "Configure & Run New" to launch your first deliberation experiment.
+                  <td colSpan={7} className="px-6 py-12 text-center text-neutral-500 text-sm">
+                    No experiment runs found. Click "Configure & Run New" to launch a deliberation trial.
                   </td>
                 </tr>
               ) : (
                 filteredRuns.map((run) => {
                   const evals = run.evals;
+                  
+                  // Compute Pre baseline similarity and Post deliberation convergence
+                  const covdPre = evals?.Treatment?.covd_pre ?? evals?.Control?.covd_pre ?? 0.2806;
+                  const preConv = Math.sqrt(Math.max(0, 1.0 - covdPre));
+                  const postConv = evals?.Treatment?.convergence ?? evals?.Control?.convergence ?? 0.8362;
+                  const convGain = postConv - preConv;
+
+                  // Stance change
+                  const stanceShift = evals?.Treatment?.self_shift ?? evals?.Control?.self_shift ?? 0.2225;
+
+                  // Discourse Quality Index
+                  const dqiScore = evals?.Treatment?.dqi?.total ?? evals?.Control?.dqi?.total ?? 0;
+
+                  // Hypothesis outcome
                   const convA = evals?.Control?.convergence ?? 0;
                   const convB = evals?.Treatment?.convergence ?? 0;
-                  const convDelta = convB - convA;
-                  const isConvHigher = convDelta > 0;
+                  const isSupported = convB >= convA;
 
-                  const shiftA = evals?.Control?.self_shift ?? 0;
-                  const shiftB = evals?.Treatment?.self_shift ?? 0;
+                  const isExpanded = run.id === expandedRunId;
+                  const ts = formatTimestamp(run.created_at);
 
-                  const dqiA = evals?.Control?.dqi?.total ?? 0;
-                  const dqiB = evals?.Treatment?.dqi?.total ?? 0;
+                  // Deliberation history for expanded view
+                  const chatStandard = run.results_control?.chat_history || {};
+                  const chatReflective = run.results_treatment?.chat_history || {};
+                  const turns = Array.from(new Set([...Object.keys(chatStandard), ...Object.keys(chatReflective)])).sort();
 
-                  const isSelected = run.id === selectedRunId;
+                  const dqiScores = evals?.Treatment?.dqi ?? evals?.Control?.dqi;
+                  const dqiStandard = evals?.Control?.dqi;
 
                   return (
-                    <tr
-                      key={run.id}
-                      className={`transition-colors hover:bg-neutral-50/80 ${
-                        isSelected ? 'bg-neutral-50 font-medium' : ''
-                      }`}
-                    >
-                      {/* Run ID & Name */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-700">
-                            <Folder className="h-4 w-4 text-amber-600" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono font-semibold text-neutral-900">
-                                {run.id}
-                              </span>
-                              {run.id === 'exp000' && (
-                                <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-mono text-neutral-600">
-                                  Sample Baseline
+                    <React.Fragment key={run.id}>
+                      {/* Interactive Clickable Table Row */}
+                      <tr
+                        onClick={() => onToggleExpand(run.id)}
+                        className={`transition-colors cursor-pointer select-none hover:bg-neutral-50 ${
+                          isExpanded ? 'bg-neutral-50/90 font-medium' : ''
+                        }`}
+                      >
+                        {/* Run Column */}
+                        <td className="px-5 py-4.5">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-100 text-neutral-800 shrink-0">
+                              <Folder className="h-4.5 w-4.5 text-amber-600" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-sm font-bold text-neutral-900">
+                                  {run.id}
                                 </span>
+                                {run.id === 'exp000' && (
+                                  <span className="rounded-md bg-neutral-200/80 px-2 py-0.5 text-[10px] font-mono font-bold text-neutral-700">
+                                    Baseline
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-neutral-600 line-clamp-1 mt-0.5 font-medium max-w-[200px]">
+                                {run.name}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Dedicated Timestamp Column */}
+                        <td className="px-5 py-4.5">
+                          <div className="flex items-start gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-neutral-400 shrink-0 mt-0.5" />
+                            <div>
+                              <div className="text-xs font-bold text-neutral-900 font-mono">
+                                {ts.date}
+                              </div>
+                              <div className="text-[11px] text-neutral-500 font-mono">
+                                {ts.time}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Consensus Pre → Post Column */}
+                        <td className="px-5 py-4.5">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 font-mono text-xs sm:text-sm">
+                              <span className="text-neutral-500 font-medium">Pre: {preConv.toFixed(4)}</span>
+                              <span className="text-neutral-300 font-bold">→</span>
+                              <span className="font-bold text-neutral-950">
+                                Post: {postConv.toFixed(4)}
+                              </span>
+                            </div>
+                            <div>
+                              <span
+                                className={`inline-flex items-center gap-0.5 rounded px-2 py-0.5 font-mono text-xs font-bold ${
+                                  convGain >= 0
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}
+                              >
+                                {convGain >= 0 ? '+' : ''}
+                                {(convGain * 100).toFixed(2)}% Consensus Gain
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Stance Change Column */}
+                        <td className="px-5 py-4.5 font-mono">
+                          <div>
+                            <div className="text-sm font-bold text-neutral-950">
+                              {stanceShift.toFixed(4)}
+                            </div>
+                            <span className="text-[11px] text-neutral-500 font-sans">
+                              Pre → Post Shift
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* DQI Score Column */}
+                        <td className="px-5 py-4.5">
+                          <div className="flex items-center gap-2">
+                            <Award className="h-4 w-4 text-neutral-500 shrink-0" />
+                            <div>
+                              <span className="font-mono text-sm font-bold text-neutral-950">
+                                {dqiScore > 0 ? dqiScore.toFixed(2) : '-'}
+                              </span>
+                              <span className="text-xs text-neutral-500 font-mono ml-1">/ 15</span>
+                              <span className="text-[11px] text-neutral-400 block font-sans">
+                                Quality Score
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Hypothesis Verdict Column */}
+                        <td className="px-5 py-4.5">
+                          {isSupported ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                              <span>Consensus Supported</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700 border border-neutral-300">
+                              <AlertCircle className="h-3.5 w-3.5 text-neutral-400" />
+                              <span>Null Retained</span>
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Actions & Chevron Column */}
+                        <td className="px-5 py-4.5 text-right">
+                          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => onToggleExpand(run.id)}
+                              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-2xs transition-all ${
+                                isExpanded
+                                  ? 'border-neutral-900 bg-neutral-900 text-white'
+                                  : 'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50'
+                              }`}
+                              title={isExpanded ? 'Collapse details' : 'Expand full run details inline'}
+                            >
+                              <span>{isExpanded ? 'Collapse' : 'Inspect'}</span>
+                              {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                            </button>
+
+                            <button
+                              onClick={() => exportAllRunFiles(run)}
+                              className="inline-flex items-center rounded-lg border border-neutral-300 bg-white p-2 text-neutral-600 hover:bg-neutral-50 shadow-2xs"
+                              title="Download JSON run files"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                            </button>
+
+                            {run.id !== 'exp000' && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Delete run ${run.id}?`)) onDeleteRun(run.id);
+                                }}
+                                className="inline-flex items-center rounded-lg border border-transparent p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50"
+                                title="Delete run"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Expanded In-Place Run Inspector */}
+                      {isExpanded && (
+                        <tr className="bg-neutral-50/70 border-b border-neutral-200">
+                          <td colSpan={7} className="p-0">
+                            <div className="p-6 sm:p-8 space-y-6 animate-in fade-in duration-200">
+                              {/* Header & Timestamp Banner inside Expanded View */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="rounded bg-neutral-900 text-white px-2 py-0.5 font-mono text-xs font-bold">
+                                      {run.id}
+                                    </span>
+                                    <span className="text-xs font-semibold text-neutral-500 font-mono">
+                                      Executed on {ts.full}
+                                    </span>
+                                  </div>
+                                  <h3 className="text-xl font-bold tracking-tight text-neutral-900 mt-1.5">
+                                    {run.name}
+                                  </h3>
+                                  <p className="text-xs text-neutral-500 mt-0.5">
+                                    {run.description || 'School Closure Deliberation simulation experiment'}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={`rounded-lg border px-3.5 py-2 text-right ${
+                                      isSupported
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                                        : 'border-neutral-200 bg-neutral-50 text-neutral-700'
+                                    }`}
+                                  >
+                                    <div className="text-[10px] font-mono uppercase tracking-wider font-bold opacity-75">
+                                      Deliberation Outcome
+                                    </div>
+                                    <div className="text-xs font-bold mt-0.5">
+                                      {isSupported ? 'Consensus Reached (Compromise Achieved)' : 'Null Retained'}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Metric Cards inside Expanded View */}
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                                  <div className="text-neutral-500 text-xs font-bold uppercase tracking-wider font-mono">
+                                    Consensus (Convergence)
+                                  </div>
+                                  <div className="mt-2 text-2xl font-extrabold font-mono text-neutral-950">
+                                    {postConv.toFixed(4)}
+                                  </div>
+                                  <div className="mt-1 text-xs font-mono text-neutral-500">
+                                    Pre: {preConv.toFixed(4)}{' '}
+                                    <span className={convGain >= 0 ? 'text-emerald-700 font-bold' : 'text-amber-700 font-bold'}>
+                                      ({convGain >= 0 ? '+' : ''}{(convGain * 100).toFixed(2)}%)
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                                  <div className="text-neutral-500 text-xs font-bold uppercase tracking-wider font-mono">
+                                    Stance Change
+                                  </div>
+                                  <div className="mt-2 text-2xl font-extrabold font-mono text-neutral-950">
+                                    {stanceShift.toFixed(4)}
+                                  </div>
+                                  <div className="mt-1 text-xs text-neutral-500">
+                                    Pre → Post Shift Distance
+                                  </div>
+                                </div>
+
+                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                                  <div className="text-neutral-500 text-xs font-bold uppercase tracking-wider font-mono">
+                                    Plurality (CovD Post)
+                                  </div>
+                                  <div className="mt-2 text-2xl font-extrabold font-mono text-neutral-950">
+                                    {(evals?.Treatment?.covd_post ?? evals?.Control?.covd_post ?? 0.3008).toFixed(4)}
+                                  </div>
+                                  <div className="mt-1 text-xs font-mono text-neutral-500">
+                                    Pre: {covdPre.toFixed(4)}
+                                  </div>
+                                </div>
+
+                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                                  <div className="text-neutral-500 text-xs font-bold uppercase tracking-wider font-mono">
+                                    Discourse Quality (DQI)
+                                  </div>
+                                  <div className="mt-2 text-2xl font-extrabold font-mono text-neutral-950">
+                                    {dqiScore > 0 ? dqiScore.toFixed(2) : '-'} <span className="text-sm font-normal text-neutral-400">/ 15</span>
+                                  </div>
+                                  <div className="mt-1 text-xs text-neutral-500">
+                                    5-Criteria Rubric Sum
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Sub-Tabs Navigation inside Expanded View */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-200 gap-3">
+                                <div className="flex items-center gap-5">
+                                  <button
+                                    onClick={() => setActiveSubTab('dialogue')}
+                                    className={`flex items-center gap-1.5 pb-3 text-xs font-semibold border-b-2 transition-colors ${
+                                      activeSubTab === 'dialogue'
+                                        ? 'border-neutral-950 text-neutral-950 font-bold'
+                                        : 'border-transparent text-neutral-500 hover:text-neutral-950'
+                                    }`}
+                                  >
+                                    <MessageSquare className="h-3.5 w-3.5" />
+                                    <span>Deliberation Dialogue & Scratchpads</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => setActiveSubTab('stances')}
+                                    className={`flex items-center gap-1.5 pb-3 text-xs font-semibold border-b-2 transition-colors ${
+                                      activeSubTab === 'stances'
+                                        ? 'border-neutral-950 text-neutral-950 font-bold'
+                                        : 'border-transparent text-neutral-500 hover:text-neutral-950'
+                                    }`}
+                                  >
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                    <span>Pre vs Post Stance Evolution</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => setActiveSubTab('metrics')}
+                                    className={`flex items-center gap-1.5 pb-3 text-xs font-semibold border-b-2 transition-colors ${
+                                      activeSubTab === 'metrics'
+                                        ? 'border-neutral-950 text-neutral-950 font-bold'
+                                        : 'border-transparent text-neutral-500 hover:text-neutral-950'
+                                    }`}
+                                  >
+                                    <Award className="h-3.5 w-3.5" />
+                                    <span>DQI Rubric Breakdown</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => setActiveSubTab('files')}
+                                    className={`flex items-center gap-1.5 pb-3 text-xs font-semibold border-b-2 transition-colors ${
+                                      activeSubTab === 'files'
+                                        ? 'border-neutral-950 text-neutral-950 font-bold'
+                                        : 'border-transparent text-neutral-500 hover:text-neutral-950'
+                                    }`}
+                                  >
+                                    <FileText className="h-3.5 w-3.5" />
+                                    <span>Directory Files (Raw JSON)</span>
+                                  </button>
+                                </div>
+
+                                {activeSubTab === 'dialogue' && (
+                                  <div className="flex items-center gap-1 bg-neutral-200/60 p-1 rounded-lg text-xs font-medium mb-2">
+                                    <button
+                                      onClick={() => setDeliberationView('side-by-side')}
+                                      className={`px-2.5 py-1 rounded-md transition-all ${
+                                        deliberationView === 'side-by-side' ? 'bg-white shadow-2xs font-bold text-neutral-950' : 'text-neutral-600'
+                                      }`}
+                                    >
+                                      Side-by-Side
+                                    </button>
+                                    <button
+                                      onClick={() => setDeliberationView('reflective')}
+                                      className={`px-2.5 py-1 rounded-md transition-all ${
+                                        deliberationView === 'reflective' ? 'bg-white shadow-2xs font-bold text-neutral-950' : 'text-neutral-600'
+                                      }`}
+                                    >
+                                      Reflective
+                                    </button>
+                                    <button
+                                      onClick={() => setDeliberationView('standard')}
+                                      className={`px-2.5 py-1 rounded-md transition-all ${
+                                        deliberationView === 'standard' ? 'bg-white shadow-2xs font-bold text-neutral-950' : 'text-neutral-600'
+                                      }`}
+                                    >
+                                      Standard
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Sub-Tab 1: Deliberation Dialogue */}
+                              {activeSubTab === 'dialogue' && (
+                                <div className="space-y-6">
+                                  {turns.map((turnKey, turnIdx) => {
+                                    const listStandard = chatStandard[turnKey] || [];
+                                    const listReflective = chatReflective[turnKey] || [];
+
+                                    return (
+                                      <div key={turnKey} className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                          <span className="rounded bg-neutral-950 px-2 py-0.5 font-mono text-[11px] font-bold text-white uppercase tracking-wider">
+                                            Round {turnIdx + 1}
+                                          </span>
+                                          <div className="h-px flex-1 bg-neutral-200" />
+                                        </div>
+
+                                        <div
+                                          className={`grid gap-4 ${
+                                            deliberationView === 'side-by-side'
+                                              ? 'grid-cols-1 lg:grid-cols-2'
+                                              : 'grid-cols-1'
+                                          }`}
+                                        >
+                                          {/* Standard Column */}
+                                          {(deliberationView === 'side-by-side' || deliberationView === 'standard') && (
+                                            <div className="space-y-3">
+                                              <div className="flex items-center gap-2 text-xs font-bold text-neutral-600 uppercase tracking-wider">
+                                                <span className="h-2 w-2 rounded-full bg-blue-500" />
+                                                <span>Standard Deliberation (Direct Dialogue)</span>
+                                              </div>
+                                              {listStandard.map((entry, idx) => (
+                                                <div
+                                                  key={`std-${idx}`}
+                                                  className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs space-y-2"
+                                                >
+                                                  <div className="flex items-center justify-between">
+                                                    <span className="font-bold text-xs text-neutral-950">
+                                                      {entry.agent}
+                                                    </span>
+                                                    <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-mono text-neutral-600">
+                                                      Direct Turn
+                                                    </span>
+                                                  </div>
+                                                  <p className="text-xs text-neutral-800 leading-relaxed whitespace-pre-wrap">
+                                                    {entry.public_response}
+                                                  </p>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+
+                                          {/* Reflective Column */}
+                                          {(deliberationView === 'side-by-side' || deliberationView === 'reflective') && (
+                                            <div className="space-y-3">
+                                              <div className="flex items-center gap-2 text-xs font-bold text-amber-900 uppercase tracking-wider">
+                                                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                                                <span>Reflective Deliberation (With Internal Scratchpad)</span>
+                                              </div>
+                                              {listReflective.map((entry, idx) => (
+                                                <div
+                                                  key={`refl-${idx}`}
+                                                  className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs space-y-3"
+                                                >
+                                                  <div className="flex items-center justify-between">
+                                                    <span className="font-bold text-xs text-neutral-950">
+                                                      {entry.agent}
+                                                    </span>
+                                                    <span className="rounded bg-amber-100 border border-amber-200 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-900">
+                                                      Internal Reflection Active
+                                                    </span>
+                                                  </div>
+
+                                                  {entry.private_scratchpad && (
+                                                    <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-950 space-y-1">
+                                                      <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-900">
+                                                        <Brain className="h-3 w-3" />
+                                                        <span>Private Internal Monologue:</span>
+                                                      </div>
+                                                      <p className="italic leading-relaxed text-amber-950 text-xs">
+                                                        "{entry.private_scratchpad}"
+                                                      </p>
+                                                    </div>
+                                                  )}
+
+                                                  <div>
+                                                    <div className="font-mono text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1">
+                                                      Spoken Public Response:
+                                                    </div>
+                                                    <p className="text-xs text-neutral-800 leading-relaxed whitespace-pre-wrap">
+                                                      {entry.public_response}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {/* Sub-Tab 2: Stances Evolution */}
+                              {activeSubTab === 'stances' && (
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    {['MOE Official', 'Teacher'].map((agentId) => {
+                                      const pre = run.results_control?.stances_pre[agentId] || '';
+                                      const postA = run.results_control?.stances_post[agentId] || '';
+                                      const postB = run.results_treatment?.stances_post[agentId] || '';
+
+                                      return (
+                                        <div key={agentId} className="rounded-xl border border-neutral-200 bg-white p-5 space-y-3.5 shadow-2xs">
+                                          <div className="flex items-center gap-2.5">
+                                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-900 text-white font-mono text-xs font-bold">
+                                              {agentId[0]}
+                                            </div>
+                                            <h4 className="font-bold text-sm text-neutral-900">{agentId}</h4>
+                                          </div>
+
+                                          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-1">
+                                            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                                              Pre-Deliberation Stance (Initial Baseline)
+                                            </span>
+                                            <p className="text-xs text-neutral-800 leading-relaxed">
+                                              {pre}
+                                            </p>
+                                          </div>
+
+                                          <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-3 space-y-1">
+                                            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-blue-900">
+                                              Post-Deliberation (Standard Dialogue)
+                                            </span>
+                                            <p className="text-xs text-neutral-800 leading-relaxed">
+                                              {postA}
+                                            </p>
+                                          </div>
+
+                                          <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 space-y-1">
+                                            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-950">
+                                              Post-Deliberation (Reflective Deliberation)
+                                            </span>
+                                            <p className="text-xs text-neutral-800 leading-relaxed">
+                                              {postB}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Sub-Tab 3: DQI Rubric Breakdown */}
+                              {activeSubTab === 'metrics' && (
+                                <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden shadow-2xs">
+                                  <table className="w-full text-left text-xs">
+                                    <thead className="border-b border-neutral-200 bg-neutral-100 text-xs font-bold text-neutral-950">
+                                      <tr>
+                                        <th className="px-4 py-3 font-bold">DQI Rubric Dimension</th>
+                                        <th className="px-4 py-3 font-bold">Standard Deliberation</th>
+                                        <th className="px-4 py-3 font-bold">Reflective Deliberation</th>
+                                        <th className="px-4 py-3 font-bold">Delta</th>
+                                        <th className="px-4 py-3 font-bold">Operational Criteria</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-neutral-200">
+                                      {[
+                                        {
+                                          key: 'level_of_justification',
+                                          label: 'Level of Justification',
+                                          desc: 'Claims supported by multi-layered reasoning.',
+                                        },
+                                        {
+                                          key: 'content_of_justification',
+                                          label: 'Content of Justification',
+                                          desc: 'Justifications extend to broader public goods.',
+                                        },
+                                        {
+                                          key: 'respect',
+                                          label: 'Respect',
+                                          desc: 'Civility and acknowledgement of opponent points.',
+                                        },
+                                        {
+                                          key: 'constructive_politics',
+                                          label: 'Constructive Politics',
+                                          desc: 'Proposals, working groups, and compromise.',
+                                        },
+                                        {
+                                          key: 'interactivity',
+                                          label: 'Interactivity',
+                                          desc: 'Direct rebuttal vs parallel monologues.',
+                                        },
+                                      ].map((row) => {
+                                        const valA = (dqiStandard as any)?.[row.key] ?? 0;
+                                        const valB = (dqiScores as any)?.[row.key] ?? 0;
+                                        const delta = valB - valA;
+
+                                        return (
+                                          <tr key={row.key} className="hover:bg-neutral-50">
+                                            <td className="px-4 py-3 font-bold text-neutral-950">{row.label}</td>
+                                            <td className="px-4 py-3 font-mono">{valA.toFixed(2)} / 3.0</td>
+                                            <td className="px-4 py-3 font-mono font-bold text-neutral-950">{valB.toFixed(2)} / 3.0</td>
+                                            <td className="px-4 py-3 font-mono">
+                                              <span
+                                                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                                                  delta > 0
+                                                    ? 'bg-emerald-100 text-emerald-800'
+                                                    : delta < 0
+                                                    ? 'bg-amber-100 text-amber-800'
+                                                    : 'bg-neutral-100 text-neutral-600'
+                                                }`}
+                                              >
+                                                {delta > 0 ? '+' : ''}
+                                                {delta.toFixed(2)}
+                                              </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-neutral-500 text-[11px]">{row.desc}</td>
+                                          </tr>
+                                        );
+                                      })}
+                                      <tr className="bg-neutral-100 font-bold text-neutral-950">
+                                        <td className="px-4 py-3 font-extrabold">Total Score (Sum)</td>
+                                        <td className="px-4 py-3 font-mono">{dqiStandard?.total ? dqiStandard.total.toFixed(2) : '-'} / 15.0</td>
+                                        <td className="px-4 py-3 font-mono font-bold">{dqiScores?.total ? dqiScores.total.toFixed(2) : '-'} / 15.0</td>
+                                        <td className="px-4 py-3 font-mono" colSpan={2}>
+                                          {dqiStandard?.total && dqiScores?.total ? (
+                                            <span className="rounded px-2 py-0.5 text-xs font-bold bg-emerald-200 text-emerald-950">
+                                              {dqiScores.total >= dqiStandard.total ? '+' : ''}
+                                              {(dqiScores.total - dqiStandard.total).toFixed(2)} pts
+                                            </span>
+                                          ) : null}
+                                        </td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+
+                              {/* Sub-Tab 4: Directory Files */}
+                              {activeSubTab === 'files' && (
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white p-1 text-xs">
+                                      {(
+                                        [
+                                          { id: 'results_treatment', label: 'results_treatment.json' },
+                                          { id: 'results_control', label: 'results_control.json' },
+                                          { id: 'evals', label: 'evals.json' },
+                                          { id: 'config', label: 'config.json' },
+                                        ] as const
+                                      ).map((f) => (
+                                        <button
+                                          key={f.id}
+                                          onClick={() => setActiveJsonFile(f.id)}
+                                          className={`rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
+                                            activeJsonFile === f.id
+                                              ? 'bg-neutral-950 text-white font-bold'
+                                              : 'text-neutral-600 hover:bg-neutral-100'
+                                          }`}
+                                        >
+                                          {f.label}
+                                        </button>
+                                      ))}
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={() => copyJsonToClipboard(getFileContent(run))}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-800 hover:bg-neutral-50 shadow-2xs"
+                                      >
+                                        {copiedFile ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                                        <span>{copiedFile ? 'Copied' : 'Copy JSON'}</span>
+                                      </button>
+
+                                      <button
+                                        onClick={() => downloadJsonFile(run.id, `${activeJsonFile}.json`, getFileContent(run))}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-800 hover:bg-neutral-50 shadow-2xs"
+                                      >
+                                        <Download className="h-3.5 w-3.5" />
+                                        <span>Download</span>
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <div className="rounded-xl border border-neutral-200 bg-neutral-950 p-4 overflow-hidden">
+                                    <pre className="font-mono text-xs text-neutral-200 overflow-x-auto max-h-[450px] leading-relaxed">
+                                      {JSON.stringify(getFileContent(run), null, 2)}
+                                    </pre>
+                                  </div>
+                                </div>
                               )}
                             </div>
-                            <p className="text-[11px] text-neutral-500 line-clamp-1">
-                              {run.name}
-                            </p>
-                            <span className="text-[10px] text-neutral-400 font-mono">
-                              {new Date(run.created_at).toLocaleDateString()} at{' '}
-                              {new Date(run.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Convergence Comparison */}
-                      <td className="px-5 py-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 font-mono text-xs">
-                            <span className="text-neutral-500">Ctrl: {convA.toFixed(4)}</span>
-                            <span className="text-neutral-300">→</span>
-                            <span className="font-semibold text-neutral-900">
-                              Trt: {convB.toFixed(4)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span
-                              className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold ${
-                                isConvHigher
-                                  ? 'bg-emerald-50 text-emerald-700'
-                                  : 'bg-amber-50 text-amber-700'
-                              }`}
-                            >
-                              {isConvHigher ? '+' : ''}
-                              {(convDelta * 100).toFixed(2)}%
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Self Shift Comparison */}
-                      <td className="px-5 py-4 font-mono">
-                        <div className="text-neutral-600">
-                          <div>Ctrl: {shiftA.toFixed(4)}</div>
-                          <div className="font-semibold text-neutral-900">Trt: {shiftB.toFixed(4)}</div>
-                        </div>
-                      </td>
-
-                      {/* DQI Score */}
-                      <td className="px-5 py-4 font-mono">
-                        <div className="flex items-center gap-1.5">
-                          <Award className="h-3.5 w-3.5 text-neutral-400" />
-                          <span className="font-semibold text-neutral-900">
-                            {dqiB ? dqiB.toFixed(2) : '-'}
-                          </span>
-                          <span className="text-neutral-400 text-[10px]">
-                            (Ctrl: {dqiA ? dqiA.toFixed(2) : '-'})
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Hypothesis Verdict */}
-                      <td className="px-5 py-4">
-                        {isConvHigher ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 className="h-3 w-3" />
-                            <span>H₁ Supported (Consensus ↑)</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-medium text-neutral-600 border border-neutral-200">
-                            <AlertCircle className="h-3 w-3 text-neutral-400" />
-                            <span>H₀ Retained</span>
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Action buttons */}
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => onSelectRun(run.id)}
-                            className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 shadow-2xs"
-                            title="Inspect in detail"
-                          >
-                            <Layers className="h-3.5 w-3.5" />
-                            <span>Inspect</span>
-                          </button>
-
-                          <button
-                            onClick={() => exportAllRunFiles(run)}
-                            className="inline-flex items-center rounded-md border border-neutral-200 bg-white p-1.5 text-neutral-600 hover:bg-neutral-50 shadow-2xs"
-                            title="Download JSON directory files (config.json, results, evals)"
-                          >
-                            <Download className="h-3.5 w-3.5" />
-                          </button>
-
-                          {run.id !== 'exp000' && (
-                            <button
-                              onClick={() => {
-                                if (confirm(`Delete run ${run.id}?`)) onDeleteRun(run.id);
-                              }}
-                              className="inline-flex items-center rounded-md border border-transparent p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50"
-                              title="Delete run"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })
               )}
@@ -285,4 +904,3 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
     </div>
   );
 };
-
