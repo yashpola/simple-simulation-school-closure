@@ -20,7 +20,8 @@ import {
   Settings,
   Cpu,
   Layers,
-  Sliders
+  Sliders,
+  Users
 } from 'lucide-react';
 import { ExperimentRun } from '@/types/experiment';
 
@@ -225,11 +226,11 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
               <tr>
                 <th className="px-5 py-5 font-bold text-neutral-950">Run</th>
                 <th className="px-5 py-5 font-bold text-neutral-950">Timestamp</th>
-                <th className="px-5 py-5 font-bold text-neutral-950">Consensus (Pre → Post)</th>
-                <th className="px-5 py-5 font-bold text-neutral-950">Stance Change</th>
-                <th className="px-5 py-5 font-bold text-neutral-950">Plurality (CovD)</th>
-                <th className="px-5 py-5 font-bold text-neutral-950">Discourse Quality (DQI)</th>
-                <th className="px-5 py-5 font-bold text-neutral-950">Verdict</th>
+                <th className="px-5 py-5 font-bold text-neutral-950 min-w-[190px]">Consensus (Convergence)</th>
+                <th className="px-5 py-5 font-bold text-neutral-950 min-w-[170px]">Stance Change</th>
+                <th className="px-5 py-5 font-bold text-neutral-950 min-w-[170px]">Plurality (CovD)</th>
+                <th className="px-5 py-5 font-bold text-neutral-950 min-w-[170px]">Discourse Quality (DQI)</th>
+                <th className="px-5 py-5 font-bold text-neutral-950 min-w-[220px]">Verdict</th>
                 <th className="px-5 py-5 text-right font-bold text-neutral-950">Actions</th>
               </tr>
             </thead>
@@ -243,25 +244,30 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
               ) : (
                 filteredRuns.map((run) => {
                   const evals = run.evals;
-                  
-                  // Compute Pre baseline similarity and Post deliberation convergence
-                  const covdPre = evals?.Treatment?.covd_pre ?? evals?.Control?.covd_pre ?? 0.2806;
-                  const covdPost = evals?.Treatment?.covd_post ?? evals?.Control?.covd_post ?? 0.3008;
-                  const preConv = Math.sqrt(Math.max(0, 1.0 - covdPre));
-                  const postConv = evals?.Treatment?.convergence ?? evals?.Control?.convergence ?? 0.8362;
-                  const convGain = postConv - preConv;
+                  const ctrlEvals = evals?.Control;
+                  const trtEvals = evals?.Treatment;
+
+                  // Pre baseline similarity and plurality
+                  const preCovD = trtEvals?.covd_pre ?? ctrlEvals?.covd_pre ?? 0.2806;
+                  const preConv = Math.sqrt(Math.max(0, 1.0 - preCovD));
+
+                  // Consensus (Convergence)
+                  const ctrlConv = ctrlEvals?.convergence ?? 0.8319;
+                  const trtConv = trtEvals?.convergence ?? 0.8362;
+                  const scratchpadHelped = trtConv > ctrlConv;
+                  const scratchpadDelta = trtConv - ctrlConv;
 
                   // Stance change
-                  const stanceShift = evals?.Treatment?.self_shift ?? evals?.Control?.self_shift ?? 0.2225;
+                  const ctrlShift = ctrlEvals?.self_shift ?? 0.2621;
+                  const trtShift = trtEvals?.self_shift ?? 0.2225;
+
+                  // Plurality (CovD Post)
+                  const ctrlCovD = ctrlEvals?.covd_post ?? 0.3079;
+                  const trtCovD = trtEvals?.covd_post ?? 0.3008;
 
                   // Discourse Quality Index
-                  const dqiScore = evals?.Treatment?.dqi?.total ?? evals?.Control?.dqi?.total ?? 0;
-
-                  // Verdict: whether internal scratchpad helped or not
-                  const convA = evals?.Control?.convergence ?? 0;
-                  const convB = evals?.Treatment?.convergence ?? 0;
-                  const scratchpadHelped = convB > convA;
-                  const scratchpadDelta = convB - convA;
+                  const ctrlDqi = ctrlEvals?.dqi?.total ?? 14.83;
+                  const trtDqi = trtEvals?.dqi?.total ?? 14.67;
 
                   const isExpanded = run.id === expandedRunId;
                   const ts = formatTimestamp(run.created_at);
@@ -328,80 +334,100 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                           </div>
                         </td>
 
-                        {/* Consensus Pre → Post Column */}
+                        {/* Consensus (Split between Control & Treatment - No Pill) */}
                         <td className="px-5 py-6">
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-1.5 font-mono text-xs">
-                              <span className="text-neutral-500">Pre: {preConv.toFixed(4)}</span>
-                              <span className="text-neutral-300">→</span>
-                              <span className="font-bold text-neutral-950">
-                                Post: {postConv.toFixed(4)}
-                              </span>
+                          <div className="space-y-1 font-mono text-xs">
+                            <div className="flex items-center justify-between gap-2.5">
+                              <span className="text-neutral-500 font-sans">Standard:</span>
+                              <span className="font-bold text-neutral-900">{ctrlConv.toFixed(4)}</span>
                             </div>
-                            <div>
-                              <span
-                                className={`inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 font-mono text-xs font-bold ${
-                                  convGain >= 0
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : 'bg-amber-100 text-amber-800'
-                                }`}
-                              >
-                                {convGain >= 0 ? '+' : ''}
-                                {(convGain * 100).toFixed(2)}% Consensus
-                              </span>
+                            <div className="flex items-center justify-between gap-2.5">
+                              <span className="text-amber-900 font-sans font-medium">Reflective:</span>
+                              <span className="font-bold text-neutral-950">{trtConv.toFixed(4)}</span>
+                            </div>
+                            <div className="text-[11px] text-neutral-400 font-sans border-t border-neutral-100 pt-0.5">
+                              Baseline Pre: {preConv.toFixed(4)}
                             </div>
                           </div>
                         </td>
 
-                        {/* Stance Change Column */}
-                        <td className="px-5 py-6 font-mono">
-                          <div className="space-y-0.5">
-                            <div className="text-base font-bold text-neutral-950">
-                              {stanceShift.toFixed(4)}
+                        {/* Stance Change (Split between Control & Treatment) */}
+                        <td className="px-5 py-6">
+                          <div className="space-y-1 font-mono text-xs">
+                            <div className="flex items-center justify-between gap-2.5">
+                              <span className="text-neutral-500 font-sans">Standard:</span>
+                              <span className="font-bold text-neutral-900">{ctrlShift.toFixed(4)}</span>
                             </div>
-                            <span className="text-xs text-neutral-500 font-sans block">
+                            <div className="flex items-center justify-between gap-2.5">
+                              <span className="text-amber-900 font-sans font-medium">Reflective:</span>
+                              <span className="font-bold text-neutral-950">{trtShift.toFixed(4)}</span>
+                            </div>
+                            <div className="text-[11px] text-neutral-400 font-sans border-t border-neutral-100 pt-0.5">
                               Pre → Post Shift
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* CovD (Plurality) Column */}
-                        <td className="px-5 py-6 font-mono">
-                          <div className="space-y-0.5">
-                            <div className="text-sm font-bold text-neutral-950">
-                              {covdPost.toFixed(4)}
                             </div>
-                            <span className="text-xs text-neutral-500 font-mono block">
-                              Pre: {covdPre.toFixed(4)}
-                            </span>
                           </div>
                         </td>
 
-                        {/* DQI Score Column */}
+                        {/* CovD Plurality (Split between Control & Treatment) */}
                         <td className="px-5 py-6">
-                          <div className="flex items-center gap-2">
-                            <Award className="h-4.5 w-4.5 text-neutral-500 shrink-0" />
-                            <div>
-                              <span className="font-mono text-base font-bold text-neutral-950">
-                                {dqiScore > 0 ? dqiScore.toFixed(2) : '-'}
-                              </span>
-                              <span className="text-xs text-neutral-400 font-mono ml-1">/ 15</span>
+                          <div className="space-y-1 font-mono text-xs">
+                            <div className="flex items-center justify-between gap-2.5">
+                              <span className="text-neutral-500 font-sans">Standard:</span>
+                              <span className="font-bold text-neutral-900">{ctrlCovD.toFixed(4)}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2.5">
+                              <span className="text-amber-900 font-sans font-medium">Reflective:</span>
+                              <span className="font-bold text-neutral-950">{trtCovD.toFixed(4)}</span>
+                            </div>
+                            <div className="text-[11px] text-neutral-400 font-sans border-t border-neutral-100 pt-0.5">
+                              Baseline Pre: {preCovD.toFixed(4)}
                             </div>
                           </div>
                         </td>
 
-                        {/* Verdict Column (Whether Internal Scratchpad Helped or Not) */}
+                        {/* DQI Score (Split between Control & Treatment) */}
+                        <td className="px-5 py-6">
+                          <div className="space-y-1 font-mono text-xs">
+                            <div className="flex items-center justify-between gap-2.5">
+                              <span className="text-neutral-500 font-sans">Standard:</span>
+                              <span className="font-bold text-neutral-900">
+                                {ctrlDqi > 0 ? ctrlDqi.toFixed(2) : '-'} <span className="text-neutral-400 text-[10px]">/ 15</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2.5">
+                              <span className="text-amber-900 font-sans font-medium">Reflective:</span>
+                              <span className="font-bold text-neutral-950">
+                                {trtDqi > 0 ? trtDqi.toFixed(2) : '-'} <span className="text-neutral-400 text-[10px]">/ 15</span>
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-neutral-400 font-sans border-t border-neutral-100 pt-0.5">
+                              5-Criteria Rubric
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Verdict Column (Direct comparison without isolated mystery percentages) */}
                         <td className="px-5 py-6">
                           {scratchpadHelped ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200 shadow-2xs">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                              <span>Scratchpad Helped (+{(scratchpadDelta * 100).toFixed(1)}%)</span>
-                            </span>
+                            <div className="space-y-1">
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-200 shadow-2xs">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                                <span>Scratchpad Helped</span>
+                              </span>
+                              <div className="text-[11px] text-neutral-600 font-mono">
+                                Consensus: {trtConv.toFixed(4)} vs {ctrlConv.toFixed(4)} ({scratchpadDelta >= 0 ? '+' : ''}{scratchpadDelta.toFixed(4)})
+                              </div>
+                            </div>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 border border-amber-200 shadow-2xs">
-                              <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                              <span>Scratchpad Did Not Help</span>
-                            </span>
+                            <div className="space-y-1">
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 border border-amber-200 shadow-2xs">
+                                <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                                <span>Scratchpad Did Not Help</span>
+                              </span>
+                              <div className="text-[11px] text-neutral-600 font-mono">
+                                Consensus: {trtConv.toFixed(4)} vs {ctrlConv.toFixed(4)}
+                              </div>
+                            </div>
                           )}
                         </td>
 
@@ -484,65 +510,97 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                                         ? 'Internal Scratchpad Helped'
                                         : 'Internal Scratchpad Did Not Help'}
                                     </div>
-                                    <div className="text-[11px] font-mono mt-0.5 opacity-80">
+                                    <div className="text-[11px] font-mono mt-0.5 opacity-90">
                                       {scratchpadHelped
-                                        ? `+${(scratchpadDelta * 100).toFixed(2)}% Consensus Gain`
-                                        : 'Direct dialogue formed equal or higher consensus'}
+                                        ? `Reflective (${trtConv.toFixed(4)}) > Standard (${ctrlConv.toFixed(4)}) · Δ +${scratchpadDelta.toFixed(4)}`
+                                        : `Reflective (${trtConv.toFixed(4)}) ≤ Standard (${ctrlConv.toFixed(4)})`}
                                     </div>
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Key Metrics Row */}
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                              {/* Key Metrics Row (Split Between Standard & Reflective) */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs space-y-2">
                                   <div className="text-neutral-500 text-xs font-bold uppercase tracking-wider font-mono">
                                     Consensus (Convergence)
                                   </div>
-                                  <div className="mt-2 text-2xl font-extrabold font-mono text-neutral-950">
-                                    {postConv.toFixed(4)}
+                                  <div className="space-y-1 font-mono text-xs">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-neutral-500 font-sans">Standard:</span>
+                                      <span className="font-bold text-neutral-900">{ctrlConv.toFixed(4)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-amber-900 font-sans font-medium">Reflective:</span>
+                                      <span className="font-bold text-neutral-950">{trtConv.toFixed(4)}</span>
+                                    </div>
                                   </div>
-                                  <div className="mt-1 text-xs font-mono text-neutral-500">
-                                    Pre: {preConv.toFixed(4)}{' '}
-                                    <span className={convGain >= 0 ? 'text-emerald-700 font-bold' : 'text-amber-700 font-bold'}>
-                                      ({convGain >= 0 ? '+' : ''}{(convGain * 100).toFixed(2)}%)
+                                  <div className="pt-1.5 border-t border-neutral-100 text-[11px] text-neutral-500 font-mono flex items-center justify-between">
+                                    <span>Pre: {preConv.toFixed(4)}</span>
+                                    <span className={scratchpadDelta >= 0 ? 'text-emerald-700 font-bold' : 'text-neutral-600'}>
+                                      Δ {scratchpadDelta >= 0 ? '+' : ''}{scratchpadDelta.toFixed(4)}
                                     </span>
                                   </div>
                                 </div>
 
-                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs space-y-2">
                                   <div className="text-neutral-500 text-xs font-bold uppercase tracking-wider font-mono">
                                     Stance Change
                                   </div>
-                                  <div className="mt-2 text-2xl font-extrabold font-mono text-neutral-950">
-                                    {stanceShift.toFixed(4)}
+                                  <div className="space-y-1 font-mono text-xs">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-neutral-500 font-sans">Standard:</span>
+                                      <span className="font-bold text-neutral-900">{ctrlShift.toFixed(4)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-amber-900 font-sans font-medium">Reflective:</span>
+                                      <span className="font-bold text-neutral-950">{trtShift.toFixed(4)}</span>
+                                    </div>
                                   </div>
-                                  <div className="mt-1 text-xs text-neutral-500">
+                                  <div className="pt-1.5 border-t border-neutral-100 text-[11px] text-neutral-500 font-sans">
                                     Pre → Post Shift Distance
                                   </div>
                                 </div>
 
-                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs space-y-2">
                                   <div className="text-neutral-500 text-xs font-bold uppercase tracking-wider font-mono">
                                     Plurality (CovD Post)
                                   </div>
-                                  <div className="mt-2 text-2xl font-extrabold font-mono text-neutral-950">
-                                    {covdPost.toFixed(4)}
+                                  <div className="space-y-1 font-mono text-xs">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-neutral-500 font-sans">Standard:</span>
+                                      <span className="font-bold text-neutral-900">{ctrlCovD.toFixed(4)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-amber-900 font-sans font-medium">Reflective:</span>
+                                      <span className="font-bold text-neutral-950">{trtCovD.toFixed(4)}</span>
+                                    </div>
                                   </div>
-                                  <div className="mt-1 text-xs font-mono text-neutral-500">
-                                    Pre: {covdPre.toFixed(4)}
+                                  <div className="pt-1.5 border-t border-neutral-100 text-[11px] text-neutral-500 font-mono">
+                                    Baseline Pre: {preCovD.toFixed(4)}
                                   </div>
                                 </div>
 
-                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs space-y-2">
                                   <div className="text-neutral-500 text-xs font-bold uppercase tracking-wider font-mono">
                                     Discourse Quality (DQI)
                                   </div>
-                                  <div className="mt-2 text-2xl font-extrabold font-mono text-neutral-950">
-                                    {dqiScore > 0 ? dqiScore.toFixed(2) : '-'} <span className="text-sm font-normal text-neutral-400">/ 15</span>
+                                  <div className="space-y-1 font-mono text-xs">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-neutral-500 font-sans">Standard:</span>
+                                      <span className="font-bold text-neutral-900">
+                                        {ctrlDqi > 0 ? ctrlDqi.toFixed(2) : '-'} <span className="text-neutral-400 text-[10px]">/ 15</span>
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-amber-900 font-sans font-medium">Reflective:</span>
+                                      <span className="font-bold text-neutral-950">
+                                        {trtDqi > 0 ? trtDqi.toFixed(2) : '-'} <span className="text-neutral-400 text-[10px]">/ 15</span>
+                                      </span>
+                                    </div>
                                   </div>
-                                  <div className="mt-1 text-xs text-neutral-500">
-                                    5-Criteria Rubric Sum
+                                  <div className="pt-1.5 border-t border-neutral-100 text-[11px] text-neutral-500 font-sans">
+                                    5-Criteria Rubric Total
                                   </div>
                                 </div>
                               </div>
@@ -785,7 +843,7 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                                 </div>
                               )}
 
-                              {/* TAB 2: Run Configuration Used (2nd tab as requested) */}
+                              {/* TAB 2: Run Configuration Used (Complete parameters & plaintext metrics) */}
                               {activeSubTab === 'config' && (
                                 <div className="space-y-6">
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -793,38 +851,42 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                                     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-2xs space-y-4">
                                       <div className="flex items-center gap-2 text-neutral-950 font-bold text-sm">
                                         <Cpu className="h-4 w-4 text-neutral-700" />
-                                        <span>Model Assignments & Sampling</span>
+                                        <span>Model Assignments & Sampling Parameters</span>
                                       </div>
 
                                       <div className="divide-y divide-neutral-100 text-xs">
-                                        <div className="py-2 flex items-center justify-between">
+                                        <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">MOE Official Model:</span>
                                           <span className="font-mono font-bold text-neutral-900">{modelAssignments['MOE Official'] || 'meta-llama/Llama-3.3-70B-Instruct-Turbo'}</span>
                                         </div>
-                                        <div className="py-2 flex items-center justify-between">
+                                        <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">Teacher Model:</span>
                                           <span className="font-mono font-bold text-neutral-900">{modelAssignments['Teacher'] || 'meta-llama/Llama-3.3-70B-Instruct-Turbo'}</span>
                                         </div>
-                                        <div className="py-2 flex items-center justify-between">
+                                        <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">DQI Judge Model:</span>
                                           <span className="font-mono font-bold text-neutral-900">{modelAssignments['DQI_Judge'] || 'meta-llama/Llama-3.3-70B-Instruct-Turbo'}</span>
                                         </div>
-                                        <div className="py-2 flex items-center justify-between">
-                                          <span className="font-semibold text-neutral-700">Agent Temperature:</span>
+                                        <div className="py-2.5 flex items-center justify-between">
+                                          <span className="font-semibold text-neutral-700">Agent Sampling Temperature:</span>
                                           <span className="font-mono font-bold text-neutral-900">{modelParams.agent_temperature ?? 0.7}</span>
                                         </div>
-                                        <div className="py-2 flex items-center justify-between">
-                                          <span className="font-semibold text-neutral-700">Judge Temperature:</span>
+                                        <div className="py-2.5 flex items-center justify-between">
+                                          <span className="font-semibold text-neutral-700">Judge Sampling Temperature:</span>
                                           <span className="font-mono font-bold text-neutral-900">{modelParams.judge_temperature ?? 0.1}</span>
                                         </div>
-                                        <div className="py-2 flex items-center justify-between">
+                                        <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">Random Seed:</span>
                                           <span className="font-mono font-bold text-neutral-900">{String(modelParams.seed ?? 'None')}</span>
+                                        </div>
+                                        <div className="py-2.5 flex items-center justify-between">
+                                          <span className="font-semibold text-neutral-700">Context Window:</span>
+                                          <span className="font-mono font-bold text-neutral-900">{modelParams.context_window ? `${modelParams.context_window.toLocaleString()} tokens` : '128,000 tokens'}</span>
                                         </div>
                                       </div>
                                     </div>
 
-                                    {/* Deliberation Budget & Conditions */}
+                                    {/* Deliberation Protocol & Rules */}
                                     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-2xs space-y-4">
                                       <div className="flex items-center gap-2 text-neutral-950 font-bold text-sm">
                                         <Sliders className="h-4 w-4 text-neutral-700" />
@@ -832,34 +894,146 @@ export const RunsDirectory: React.FC<RunsDirectoryProps> = ({
                                       </div>
 
                                       <div className="divide-y divide-neutral-100 text-xs">
-                                        <div className="py-2 flex items-center justify-between">
+                                        <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">Turns Per Agent (Rounds):</span>
                                           <span className="font-mono font-bold text-neutral-900">{delibConfig.max_turns_per_agent || 3}</span>
                                         </div>
-                                        <div className="py-2 flex items-center justify-between">
+                                        <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">Total Trials:</span>
                                           <span className="font-mono font-bold text-neutral-900">{delibConfig.total_trials || 1}</span>
                                         </div>
-                                        <div className="py-2 flex items-center justify-between">
-                                          <span className="font-semibold text-neutral-700">Metrics Evaluated:</span>
-                                          <span className="font-mono font-bold text-neutral-900">{(delibConfig.eval_metrics || ['cosine_similarity', 'covd', 'dqi']).join(', ')}</span>
+                                        <div className="py-2.5 flex items-start justify-between gap-3">
+                                          <span className="font-semibold text-neutral-700 shrink-0">Evaluated Metrics:</span>
+                                          <span className="font-medium text-neutral-900 text-right leading-relaxed">
+                                            {(delibConfig.eval_metrics || ['cosine_similarity', 'covd', 'dqi'])
+                                              .map((m: string) => {
+                                                if (m === 'cosine_similarity') return 'Consensus (Cosine Convergence)';
+                                                if (m === 'covd') return 'Opinion Plurality (CovD)';
+                                                if (m === 'dqi') return 'Discourse Quality Index (DQI)';
+                                                if (m === 'self_shift') return 'Stance Shift';
+                                                return m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                                              })
+                                              .join(', ')}
+                                          </span>
                                         </div>
-                                        <div className="py-2 flex items-center justify-between">
+                                        <div className="py-2.5 flex items-center justify-between">
                                           <span className="font-semibold text-neutral-700">Conditions Run:</span>
-                                          <span className="font-semibold text-neutral-900">Standard Deliberation & Reflective Deliberation</span>
+                                          <span className="font-medium text-neutral-900">Standard Deliberation & Reflective Deliberation</span>
                                         </div>
                                       </div>
                                     </div>
                                   </div>
 
-                                  {/* Topic Prompt Box */}
-                                  <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-2xs space-y-2">
-                                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 font-mono">
-                                      Topic Prompt Given to Agents
-                                    </span>
-                                    <p className="text-xs text-neutral-800 leading-relaxed font-sans bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                                      {runConfig?.system_prompts?.topic_prompt || 'The MOE is proposing to merge your local heritage primary school with a newer school 3km away due to falling enrollment. Discuss the impacts and try to reach a consensus on a recommendation to the MOE.'}
-                                    </p>
+                                  {/* Configured Personas & Character System Prompts */}
+                                  <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-2xs space-y-4">
+                                    <div className="flex items-center gap-2 text-neutral-950 font-bold text-sm">
+                                      <Users className="h-4 w-4 text-neutral-700" />
+                                      <span>Configured Personas & Character Prompts</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {(runConfig?.system_prompts?.personas || [
+                                        {
+                                          id: 'MOE Official',
+                                          role: 'MOE Pragmatist',
+                                          description: 'You are a Ministry of Education official. Your main concern is efficiency, falling birth rates, and ensuring every school has a critical mass of students for diverse social mixing and viability. You strongly support the school merger.',
+                                        },
+                                        {
+                                          id: 'Teacher',
+                                          role: 'Stressed Teacher',
+                                          description: "You are a teacher at the heritage school. You are deeply opposed to the merger because it disrupts the local community, threatens job security, and destroys the school's heritage.",
+                                        },
+                                      ]).map((persona) => (
+                                        <div key={persona.id} className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-2.5">
+                                          <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-bold text-sm text-neutral-900">{persona.id}</span>
+                                              <span className="rounded bg-neutral-200 px-2 py-0.5 text-[10px] font-mono font-bold text-neutral-700">
+                                                {persona.role}
+                                              </span>
+                                            </div>
+                                            <span className="text-xs font-mono text-neutral-500">
+                                              {modelAssignments[persona.id]?.split('/').pop() || 'Llama-3.3-70B'}
+                                            </span>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">
+                                              Persona Character Prompt:
+                                            </span>
+                                            <p className="text-xs text-neutral-800 leading-relaxed font-sans bg-white p-3 rounded-lg border border-neutral-200/80">
+                                              {persona.description}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Deliberation Task & Elicitation Prompts */}
+                                  <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-2xs space-y-4">
+                                    <div className="flex items-center gap-2 text-neutral-950 font-bold text-sm">
+                                      <MessageSquare className="h-4 w-4 text-neutral-700" />
+                                      <span>Deliberation Task & Elicitation Prompts</span>
+                                    </div>
+
+                                    <div className="space-y-3.5 text-xs">
+                                      {/* Topic Prompt */}
+                                      <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3.5 space-y-1.5">
+                                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">
+                                          Deliberation Topic Prompt Given to Agents
+                                        </span>
+                                        <p className="text-xs text-neutral-800 leading-relaxed font-sans bg-white p-3 rounded border border-neutral-200">
+                                          {runConfig?.system_prompts?.topic_prompt ||
+                                            'The MOE is proposing to merge your local heritage primary school with a newer school 3km away due to falling enrollment. Discuss the impacts and try to reach a consensus on a recommendation to the MOE.'}
+                                        </p>
+                                      </div>
+
+                                      {/* Pre & Post Stance Prompts */}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3.5 space-y-1.5">
+                                          <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">
+                                            Pre-Deliberation Stance Elicitation Prompt
+                                          </span>
+                                          <p className="text-xs text-neutral-800 leading-relaxed font-sans bg-white p-2.5 rounded border border-neutral-200">
+                                            {runConfig?.system_prompts?.pre_stance_prompt ||
+                                              'You are participating in a deliberation. Based on your persona, write a 1-paragraph stance on the following topic:'}
+                                          </p>
+                                        </div>
+
+                                        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3.5 space-y-1.5">
+                                          <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">
+                                            Post-Deliberation Stance Elicitation Prompt
+                                          </span>
+                                          <p className="text-xs text-neutral-800 leading-relaxed font-sans bg-white p-2.5 rounded border border-neutral-200">
+                                            {runConfig?.system_prompts?.post_stance_prompt ||
+                                              'You have just concluded a deliberation with other citizens. Based on the discussion, write your final 1-paragraph stance.'}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {/* Condition Prompt Instructions */}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                        <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-3.5 space-y-1.5">
+                                          <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-blue-900 block">
+                                            Standard Deliberation Condition Prompt Addition
+                                          </span>
+                                          <p className="text-xs text-neutral-800 leading-relaxed font-sans bg-white p-2.5 rounded border border-blue-200/80">
+                                            {runConfig?.deliberation_config?.runs?.[0]?.system_prompt_addition ||
+                                              'Respond directly to the previous speakers in character.'}
+                                          </p>
+                                        </div>
+
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3.5 space-y-1.5">
+                                          <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-950 block">
+                                            Reflective Deliberation Condition Prompt Addition (Scratchpad)
+                                          </span>
+                                          <p className="text-xs text-neutral-800 leading-relaxed font-sans bg-white p-2.5 rounded border border-amber-200/80">
+                                            {runConfig?.deliberation_config?.runs?.[1]?.system_prompt_addition ||
+                                              'Before responding, you MUST write your internal thoughts inside <private_scratchpad> tags. Analyze what others said, how it affects your persona\'s goals, and where you might compromise. Then, write your verbal response inside <public_response> tags.'}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               )}

@@ -1,10 +1,11 @@
 import React from 'react';
-import { Database, FolderGit2, Settings, Key, ShieldCheck } from 'lucide-react';
+import { Database, FolderGit2, Settings, Layers, Key } from 'lucide-react';
 import { ApiSettings } from './ApiSettingsModal';
 
 interface NavbarProps {
-  activeTab: 'directory' | 'config';
-  setActiveTab: (tab: 'directory' | 'config') => void;
+  activeTab: 'directory' | 'inspector' | 'config' | 'setup';
+  setActiveTab: (tab: 'directory' | 'inspector' | 'config' | 'setup') => void;
+  selectedRunId: string | null;
   supabaseConnected: boolean;
   onOpenSetup: () => void;
   apiSettings: ApiSettings;
@@ -14,14 +15,13 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
+  selectedRunId,
   supabaseConnected,
   onOpenSetup,
   apiSettings,
   onOpenApiSettings,
 }) => {
-  const hasApiKey = Boolean(
-    apiSettings.apiKey && apiSettings.apiKey.length > 0,
-  );
+  const hasApiKey = Boolean(apiSettings.apiKey && apiSettings.apiKey.length > 0);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-neutral-200 bg-white/90 backdrop-blur-md">
@@ -40,13 +40,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Navigation Tabs (No separate inspector tab: runs expand inline on the history page) */}
+        {/* Navigation Tabs */}
         <nav className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100/80 p-1 text-sm">
           <button
-            onClick={() => setActiveTab("directory")}
-            className={`flex items-center gap-2 rounded-md px-4 py-2 font-medium transition-all ${
+            onClick={() => setActiveTab('directory')}
+            className={`flex items-center gap-2 rounded-md px-3.5 py-1.5 font-medium transition-all ${
               activeTab === 'directory'
-                ? 'bg-white text-neutral-900 shadow-xs font-bold'
+                ? 'bg-white text-neutral-900 shadow-xs font-semibold'
                 : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/50'
             }`}
           >
@@ -55,10 +55,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveTab("config")}
-            className={`flex items-center gap-2 rounded-md px-4 py-2 font-medium transition-all ${
+            onClick={() => setActiveTab('inspector')}
+            className={`flex items-center gap-2 rounded-md px-3.5 py-1.5 font-medium transition-all ${
+              activeTab === 'inspector'
+                ? 'bg-white text-neutral-900 shadow-xs font-semibold'
+                : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/50'
+            }`}
+          >
+            <Layers className="h-4 w-4" />
+            <span>
+              Inspector {selectedRunId ? `(${selectedRunId})` : ''}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('config')}
+            className={`flex items-center gap-2 rounded-md px-3.5 py-1.5 font-medium transition-all ${
               activeTab === 'config'
-                ? 'bg-white text-neutral-900 shadow-xs font-bold'
+                ? 'bg-white text-neutral-900 shadow-xs font-semibold'
                 : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/50'
             }`}
           >
@@ -69,29 +83,23 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Status Pills (API Key BYOK + Supabase) */}
         <div className="flex items-center gap-2.5">
-          {/* BYOK API Key Pill with Security Assurance */}
+          {/* BYOK API Key Pill */}
           <button
             onClick={onOpenApiSettings}
             className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-mono font-medium border transition-colors ${
               hasApiKey
-                ? "border-emerald-300/80 bg-emerald-50/70 text-emerald-900 hover:bg-emerald-100"
-                : "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                ? 'border-neutral-300 bg-neutral-50 text-neutral-800 hover:bg-neutral-100'
+                : 'border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
             }`}
-            title={
-              hasApiKey
-                ? "BYOK active · Key secured in local browser memory only · Click to manage"
-                : "Configure custom LLM API Key & Base URL"
-            }
+            title="Configure custom LLM API Key & Base URL"
           >
             <span
               className={`h-2 w-2 rounded-full ${
-                hasApiKey ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
+                hasApiKey ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
               }`}
             />
-            {hasApiKey ? <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" /> : <Key className="h-3.5 w-3.5" />}
-            <span>
-              {hasApiKey ? `Secured: ${apiSettings.provider}` : "Set API Key"}
-            </span>
+            <Key className="h-3.5 w-3.5" />
+            <span>{hasApiKey ? `Key: ${apiSettings.provider}` : 'Set API Key'}</span>
           </button>
 
           {/* Supabase Status Pill */}
@@ -99,18 +107,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={onOpenSetup}
             className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-mono font-medium border transition-colors ${
               supabaseConnected
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-                : "border-neutral-300 bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                : 'border-neutral-300 bg-neutral-50 text-neutral-600 hover:bg-neutral-100'
             }`}
             title="Supabase Database Status"
           >
             <span
               className={`h-2 w-2 rounded-full ${
-                supabaseConnected ? "bg-emerald-500" : "bg-neutral-400"
+                supabaseConnected ? 'bg-emerald-500' : 'bg-neutral-400'
               }`}
             />
             <Database className="h-3.5 w-3.5" />
-            <span>{supabaseConnected ? "Supabase" : "Local DB"}</span>
+            <span>{supabaseConnected ? 'Supabase' : 'Local DB'}</span>
           </button>
         </div>
       </div>
